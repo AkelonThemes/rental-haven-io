@@ -56,14 +56,27 @@ serve(async (req) => {
     console.log('Received webhook request', {
       signature_exists: !!signature,
       body_length: body.length,
+      webhook_secret_exists: !!webhookSecret
     });
 
     // Verify the webhook signature
-    const event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      webhookSecret
-    );
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        webhookSecret
+      );
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err.message);
+      return new Response(
+        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     console.log('Received Stripe event:', event.type);
 
@@ -146,23 +159,20 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ received: true }), { 
-      status: 200,
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'application/json',
+    return new Response(
+      JSON.stringify({ received: true }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       }
-    });
+    );
   } catch (err) {
     console.error('Error processing webhook:', err);
     return new Response(
       JSON.stringify({ error: err.message }),
       { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-        }
       }
     );
   }
