@@ -8,9 +8,14 @@ import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { PaymentStats } from "@/components/payments/PaymentStats";
 import { PaymentFilters } from "@/components/payments/PaymentFilters";
 import { PaymentList } from "@/components/payments/PaymentList";
+import { Tables } from "@/integrations/supabase/types";
 
 type PaymentType = 'all' | 'rent' | 'subscription';
 type PaymentStatus = 'all' | 'pending' | 'completed' | 'failed' | 'refunded';
+
+type PaymentWithProperty = Tables<"payments"> & {
+  property: Tables<"properties"> | null;
+};
 
 export default function Payments() {
   const { toast } = useToast();
@@ -24,18 +29,7 @@ export default function Payments() {
         .from('payments')
         .select(`
           *,
-          property:properties(
-            id,
-            address,
-            city,
-            state,
-            zip_code,
-            status,
-            rent_amount,
-            owner_id,
-            created_at,
-            updated_at
-          )
+          property:properties(*)
         `);
 
       if (typeFilter !== 'all') {
@@ -56,7 +50,7 @@ export default function Payments() {
         throw error;
       }
 
-      return data;
+      return data as PaymentWithProperty[];
     },
   });
 

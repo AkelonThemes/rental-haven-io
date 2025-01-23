@@ -14,10 +14,13 @@ interface Property {
   id: string;
   address: string;
   city: string;
-  state: string;
+  province: string;
   zip_code: string;
   status: "occupied" | "vacant" | "maintenance";
   rent_amount: number;
+  created_at: string;
+  updated_at: string;
+  owner_id: string;
 }
 
 const Index = () => {
