@@ -5,6 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { AddPropertyDialog } from "@/components/AddPropertyDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Property {
   id: string;
@@ -19,31 +23,69 @@ interface Property {
 const Index = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        // Redirect to login or show auth UI
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
-        if (error) {
-          toast({
-            title: "Authentication Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+        setShowAuthDialog(true);
       }
       setIsLoading(false);
     };
     checkAuth();
-  }, [toast]);
+  }, []);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Please check your email to verify your account",
+        });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        setShowAuthDialog(false);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setShowAuthDialog(true);
+    }
+  };
 
   // Fetch properties
   const { data: properties = [], isError } = useQuery({
@@ -83,8 +125,52 @@ const Index = () => {
           <h1 className="text-2xl font-bold text-gray-900">Properties</h1>
           <p className="text-gray-600 mt-1">Manage your real estate portfolio</p>
         </div>
-        <AddPropertyDialog />
+        <div className="flex gap-4">
+          <AddPropertyDialog />
+          <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+        </div>
       </div>
+
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{isSignUp ? "Create Account" : "Sign In"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={authLoading}>
+              {authLoading ? "Loading..." : (isSignUp ? "Sign Up" : "Sign In")}
+            </Button>
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {isError ? (
         <div className="text-center py-8">
@@ -100,7 +186,7 @@ const Index = () => {
             <PropertyCard
               key={property.id}
               address={property.address}
-              tenants={0} // We'll implement this later with a tenant count query
+              tenants={0}
               rentAmount={property.rent_amount}
               status={property.status}
             />
