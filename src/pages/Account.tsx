@@ -52,6 +52,7 @@ const Account = () => {
 
   const handleUpgradeClick = async () => {
     try {
+      // First check if user already has an active subscription
       if (subscription?.status === 'active') {
         toast({
           title: "Subscription Active",
@@ -69,7 +70,8 @@ const Account = () => {
         console.error('Error creating checkout session:', error);
         let errorMessage = "Failed to start checkout process. Please try again.";
         
-        if (error.message?.includes("Customer already has an active subscription")) {
+        if (error.message?.includes("Customer already has an active subscription") || 
+            error.body?.includes("Customer already has an active subscription")) {
           errorMessage = "You already have an active subscription. Please manage your subscription from the billing portal.";
         }
         
