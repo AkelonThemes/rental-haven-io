@@ -27,14 +27,14 @@ export function AddPropertyDialog() {
         throw new Error("You must be logged in to add a property");
       }
 
-      const formData = new FormData(e.currentTarget);
+      const form = e.currentTarget;
       const propertyData = {
         owner_id: session.user.id,
-        address: formData.get("address") as string,
-        city: formData.get("city") as string,
-        province: formData.get("province") as string,
-        zip_code: formData.get("zipCode") as string,
-        rent_amount: parseFloat(formData.get("rentAmount") as string),
+        address: form.address.value,
+        city: form.city.value,
+        province: form.province.value,
+        zip_code: form.zipCode.value,
+        rent_amount: parseFloat(form.rentAmount.value),
         status: "vacant" as const // Default status for new properties
       };
 
