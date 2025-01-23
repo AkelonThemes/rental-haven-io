@@ -3,15 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { CreditCard, Package, ArrowRight } from "lucide-react";
-import { format } from "date-fns";
+import { CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ProfileDetails } from "@/components/account/ProfileDetails";
+import { SubscriptionDetails } from "@/components/account/SubscriptionDetails";
 
 const Account = () => {
   const { toast } = useToast();
-  
+
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -52,7 +51,6 @@ const Account = () => {
 
   const handleUpgradeClick = async () => {
     try {
-      // First check if user already has an active subscription
       if (subscription?.status === 'active') {
         toast({
           title: "Subscription Active",
@@ -68,16 +66,9 @@ const Account = () => {
       
       if (error) {
         console.error('Error creating checkout session:', error);
-        let errorMessage = "Failed to start checkout process. Please try again.";
-        
-        if (error.message?.includes("Customer already has an active subscription") || 
-            error.body?.includes("Customer already has an active subscription")) {
-          errorMessage = "You already have an active subscription. Please manage your subscription from the billing portal.";
-        }
-        
         toast({
           title: "Error",
-          description: errorMessage,
+          description: "Failed to start checkout process. Please try again.",
           variant: "destructive",
         });
         return;
@@ -98,19 +89,6 @@ const Account = () => {
     }
   };
 
-  const getPlanBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'default';
-      case 'trialing':
-        return 'secondary';
-      case 'canceled':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -122,71 +100,21 @@ const Account = () => {
         </div>
 
         <div className="grid gap-6">
-          {/* Profile Section */}
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                <p className="text-base">{profile?.full_name || "Not set"}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Company</label>
-                <p className="text-base">{profile?.company_name || "Not set"}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Subscription Section */}
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Subscription</h2>
-            {isLoadingSubscription ? (
-              <div className="space-y-4">
-                <Skeleton className="h-4 w-[250px]" />
-                <Skeleton className="h-4 w-[200px]" />
-              </div>
-            ) : subscription ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5 text-primary" />
-                  <span className="font-medium capitalize">{subscription.plan_type} Plan</span>
-                  <Badge variant={getPlanBadgeVariant(subscription.status)}>
-                    {subscription.status}
-                  </Badge>
-                </div>
-                {subscription.current_period_end && (
-                  <div className="text-sm text-muted-foreground">
-                    Next billing date: {format(new Date(subscription.current_period_end), "PPP")}
-                  </div>
-                )}
-                {subscription.status === 'active' && (
-                  <div className="text-sm text-muted-foreground">
-                    Subscription ID: {subscription.stripe_subscription_id}
-                  </div>
-                )}
-                {subscription.status !== "active" && (
-                  <Button onClick={handleUpgradeClick} className="mt-4">
-                    Upgrade Plan
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-muted-foreground">No active subscription</p>
-                <Button onClick={handleUpgradeClick}>
-                  Subscribe Now
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </Card>
+          <ProfileDetails profile={profile} />
+          <SubscriptionDetails
+            subscription={subscription}
+            isLoading={isLoadingSubscription}
+            onUpgradeClick={handleUpgradeClick}
+          />
 
           {/* Payment History */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Payment History</h2>
             <div className="space-y-4">
-              <Button variant="outline" onClick={() => window.location.href = "/payments"}>
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = "/payments"}
+              >
                 <CreditCard className="mr-2 h-4 w-4" />
                 View All Payments
               </Button>
