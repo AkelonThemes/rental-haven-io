@@ -44,15 +44,32 @@ const Account = () => {
 
   const handleUpgradeClick = async () => {
     try {
+      // Check if user already has an active subscription
+      if (subscription?.status === 'active') {
+        toast({
+          title: "Subscription Active",
+          description: "You already have an active subscription. Please manage your subscription from the billing portal.",
+          variant: "default",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         method: 'POST',
       });
       
       if (error) {
         console.error('Error creating checkout session:', error);
+        let errorMessage = "Failed to start checkout process. Please try again.";
+        
+        // Handle specific error cases
+        if (error.message?.includes("Customer already has an active subscription")) {
+          errorMessage = "You already have an active subscription. Please manage your subscription from the billing portal.";
+        }
+        
         toast({
           title: "Error",
-          description: error.message || "Failed to start checkout process. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
         return;
@@ -121,10 +138,12 @@ const Account = () => {
                     Next billing date: {format(new Date(subscription.current_period_end), "PPP")}
                   </div>
                 )}
-                <Button onClick={handleUpgradeClick} className="mt-4">
-                  Upgrade Plan
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                {subscription.status !== "active" && (
+                  <Button onClick={handleUpgradeClick} className="mt-4">
+                    Upgrade Plan
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
