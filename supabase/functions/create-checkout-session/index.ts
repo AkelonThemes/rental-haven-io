@@ -50,7 +50,8 @@ serve(async (req) => {
       limit: 1
     });
 
-    const price_id = "price_1QkPP4BZnQTVE0K5YxOYjClN";
+    // Use a test mode price ID here - you need to replace this with your actual test price ID
+    const price_id = "price_test_replace_this";  // <-- Replace this with your test price ID
 
     let customer_id = undefined;
     if (customers.data.length > 0) {
