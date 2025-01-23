@@ -111,13 +111,19 @@ const Index = () => {
     }
   };
 
-  // Fetch properties
+  // Fetch properties - The RLS policy will automatically filter for the current user
   const { data: properties = [], isError } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No authenticated session');
+      }
+
       const { data, error } = await supabase
         .from('properties')
-        .select('*');
+        .select('*')
+        .eq('owner_id', session.user.id);
       
       if (error) {
         toast({
