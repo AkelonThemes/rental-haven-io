@@ -7,8 +7,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Package, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 const Account = () => {
+  const { toast } = useToast();
+  
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -41,20 +44,42 @@ const Account = () => {
 
   const handleUpgradeClick = async () => {
     try {
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("No access token found");
+      }
+
+      const response = await fetch(
+        "https://hlljirnsimcmmuuhaurs.supabase.co/functions/v1/create-checkout-session",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
       
-      const { url } = await response.json();
+      const { url, error } = await response.json();
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (url) {
         window.location.href = url;
       }
     } catch (error) {
       console.error("Error creating checkout session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start checkout process. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -126,7 +151,6 @@ const Account = () => {
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Payment History</h2>
             <div className="space-y-4">
-              {/* We'll fetch and display payment history here */}
               <Button variant="outline" onClick={() => window.location.href = "/payments"}>
                 <CreditCard className="mr-2 h-4 w-4" />
                 View All Payments
