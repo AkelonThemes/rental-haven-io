@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import PropertyCard from "@/components/PropertyCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Building2 } from "lucide-react";
 
 interface Property {
   id: string;
@@ -134,6 +142,19 @@ const Index = () => {
     );
   }
 
+  const getStatusColor = (status: Property['status']) => {
+    switch (status) {
+      case 'occupied':
+        return 'bg-green-100 text-green-800';
+      case 'vacant':
+        return 'bg-red-100 text-red-800';
+      case 'maintenance':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="mb-8 flex justify-between items-center">
@@ -193,20 +214,40 @@ const Index = () => {
           <p className="text-red-600">Failed to load properties. Please try again later.</p>
         </div>
       ) : properties.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="text-center py-8 space-y-4">
+          <Building2 className="w-12 h-12 text-gray-400 mx-auto" />
           <p className="text-gray-600">No properties found. Add your first property to get started.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property) => (
-            <PropertyCard
-              key={property.id}
-              address={property.address}
-              tenants={0}
-              rentAmount={property.rent_amount}
-              status={property.status}
-            />
-          ))}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Address</TableHead>
+                <TableHead>City</TableHead>
+                <TableHead>Province</TableHead>
+                <TableHead>ZIP Code</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Rent Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {properties.map((property) => (
+                <TableRow key={property.id}>
+                  <TableCell>{property.address}</TableCell>
+                  <TableCell>{property.city}</TableCell>
+                  <TableCell>{property.province}</TableCell>
+                  <TableCell>{property.zip_code}</TableCell>
+                  <TableCell>
+                    <span className={`inline-block px-2 py-1 rounded-full text-sm ${getStatusColor(property.status)}`}>
+                      {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">{property.rent_amount}K/month</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </DashboardLayout>
