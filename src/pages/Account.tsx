@@ -128,7 +128,7 @@ const Account = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Package className="w-5 h-5 text-primary" />
-                  <span className="font-medium">{subscription.plan_type}</span>
+                  <span className="font-medium capitalize">{subscription.plan_type} Plan</span>
                   <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
                     {subscription.status}
                   </Badge>
