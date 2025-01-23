@@ -16,6 +16,7 @@ serve(async (req) => {
   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
   if (!signature || !webhookSecret) {
+    console.error('Missing signature or webhook secret');
     return new Response(
       JSON.stringify({ error: 'Missing signature or webhook secret' }),
       { status: 400 }
@@ -30,12 +31,16 @@ serve(async (req) => {
       webhookSecret
     );
 
+    console.log('Received Stripe event:', event.type);
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         const customerId = session.customer as string;
         const userId = subscription.metadata.user_id;
+
+        console.log('Processing completed checkout session:', session.id);
 
         // Update subscription in database
         const { error: updateError } = await supabaseClient
@@ -75,6 +80,8 @@ serve(async (req) => {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
         const userId = subscription.metadata.user_id;
+
+        console.log('Processing subscription update:', subscription.id);
 
         const { error } = await supabaseClient
           .from('subscriptions')
