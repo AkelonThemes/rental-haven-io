@@ -50,8 +50,7 @@ serve(async (req) => {
       limit: 1
     });
 
-    // Use a test mode price ID here - you need to replace this with your actual test price ID
-    const price_id = "price_test_replace_this";  // <-- Replace this with your test price ID
+    const price_id = "price_1QkPnyBZnQTVE0K5jo0Lr9cd";  // Updated with your test price ID
 
     let customer_id = undefined;
     if (customers.data.length > 0) {
@@ -73,7 +72,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customer_id,
       customer_email: customer_id ? undefined : email,
-      payment_method_types: ['card'], // Explicitly specify payment methods
+      payment_method_types: ['card'],
       line_items: [
         {
           price: price_id,
