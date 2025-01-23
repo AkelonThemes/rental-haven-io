@@ -33,7 +33,15 @@ const Account = () => {
     queryFn: async () => {
       const { data: subscription } = await supabase
         .from("subscriptions")
-        .select("*")
+        .select(`
+          *,
+          payments (
+            amount,
+            status,
+            payment_date,
+            stripe_payment_id
+          )
+        `)
         .eq("profile_id", profile?.id)
         .maybeSingle();
       
@@ -62,7 +70,6 @@ const Account = () => {
         console.error('Error creating checkout session:', error);
         let errorMessage = "Failed to start checkout process. Please try again.";
         
-        // Handle specific error cases
         if (error.message?.includes("Customer already has an active subscription")) {
           errorMessage = "You already have an active subscription. Please manage your subscription from the billing portal.";
         }
@@ -87,6 +94,19 @@ const Account = () => {
         description: "Failed to start checkout process. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const getPlanBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'trialing':
+        return 'warning';
+      case 'canceled':
+        return 'destructive';
+      default:
+        return 'secondary';
     }
   };
 
@@ -129,13 +149,18 @@ const Account = () => {
                 <div className="flex items-center gap-2">
                   <Package className="w-5 h-5 text-primary" />
                   <span className="font-medium capitalize">{subscription.plan_type} Plan</span>
-                  <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
+                  <Badge variant={getPlanBadgeVariant(subscription.status)}>
                     {subscription.status}
                   </Badge>
                 </div>
                 {subscription.current_period_end && (
                   <div className="text-sm text-muted-foreground">
                     Next billing date: {format(new Date(subscription.current_period_end), "PPP")}
+                  </div>
+                )}
+                {subscription.status === 'active' && (
+                  <div className="text-sm text-muted-foreground">
+                    Subscription ID: {subscription.stripe_subscription_id}
                   </div>
                 )}
                 {subscription.status !== "active" && (
