@@ -11,20 +11,43 @@ const supabaseClient = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
-serve(async (req) => {
-  const signature = req.headers.get('stripe-signature');
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+};
 
-  if (!signature || !webhookSecret) {
-    console.error('Missing signature or webhook secret');
-    return new Response(
-      JSON.stringify({ error: 'Missing signature or webhook secret' }),
-      { status: 400 }
-    );
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: corsHeaders
+    });
   }
 
   try {
+    // Get the stripe signature from headers
+    const signature = req.headers.get('stripe-signature');
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+    if (!signature || !webhookSecret) {
+      console.error('Missing signature or webhook secret');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing signature or webhook secret',
+          signature_present: !!signature,
+          secret_present: !!webhookSecret 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Get the raw body
     const body = await req.text();
+    
+    // Verify the webhook signature
     const event = stripe.webhooks.constructEvent(
       body,
       signature,
@@ -40,7 +63,11 @@ serve(async (req) => {
         const customerId = session.customer as string;
         const userId = subscription.metadata.user_id;
 
-        console.log('Processing completed checkout session:', session.id);
+        console.log('Processing completed checkout session:', {
+          session_id: session.id,
+          customer_id: customerId,
+          user_id: userId
+        });
 
         // Update subscription in database
         const { error: updateError } = await supabaseClient
@@ -49,7 +76,7 @@ serve(async (req) => {
             profile_id: userId,
             stripe_subscription_id: subscription.id,
             stripe_customer_id: customerId,
-            plan_type: 'pro', // Adjust based on your plan types
+            plan_type: 'pro',
             status: subscription.status,
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
@@ -57,6 +84,7 @@ serve(async (req) => {
 
         if (updateError) {
           console.error('Error updating subscription:', updateError);
+          throw updateError;
         }
 
         // Create payment record
@@ -72,6 +100,7 @@ serve(async (req) => {
 
         if (paymentError) {
           console.error('Error creating payment record:', paymentError);
+          throw paymentError;
         }
         break;
       }
@@ -81,7 +110,11 @@ serve(async (req) => {
         const subscription = event.data.object;
         const userId = subscription.metadata.user_id;
 
-        console.log('Processing subscription update:', subscription.id);
+        console.log('Processing subscription update:', {
+          subscription_id: subscription.id,
+          user_id: userId,
+          status: subscription.status
+        });
 
         const { error } = await supabaseClient
           .from('subscriptions')
@@ -96,17 +129,24 @@ serve(async (req) => {
 
         if (error) {
           console.error('Error updating subscription:', error);
+          throw error;
         }
         break;
       }
     }
 
-    return new Response(JSON.stringify({ received: true }), { status: 200 });
+    return new Response(JSON.stringify({ received: true }), { 
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   } catch (err) {
     console.error('Error processing webhook:', err);
     return new Response(
-      JSON.stringify({ error: 'Webhook error' }),
-      { status: 400 }
+      JSON.stringify({ error: err.message }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   }
 });
