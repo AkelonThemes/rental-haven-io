@@ -35,6 +35,7 @@ export function AddPropertyDialog() {
         state: formData.get("state") as string,
         zip_code: formData.get("zipCode") as string,
         rent_amount: parseFloat(formData.get("rentAmount") as string),
+        status: "vacant" // Default status for new properties
       };
 
       const { error } = await supabase
@@ -48,6 +49,7 @@ export function AddPropertyDialog() {
         description: "Property has been added successfully",
       });
 
+      // Invalidate and refetch properties query
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       setOpen(false);
     } catch (error: any) {
