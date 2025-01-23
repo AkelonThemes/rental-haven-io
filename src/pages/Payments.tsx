@@ -5,49 +5,67 @@ import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Receipt, DollarSign, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+type PaymentType = 'all' | 'rent' | 'subscription';
+type PaymentStatus = 'all' | 'pending' | 'completed' | 'failed' | 'refunded';
 
 interface Payment {
   id: string;
   amount: number;
-  status: "pending" | "completed" | "failed";
-  date: string;
-  property: {
+  payment_type: 'subscription' | 'rent';
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  payment_date: string | null;
+  property?: {
     address: string;
   };
+  created_at: string;
 }
 
 const Payments = () => {
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const { toast } = useToast();
+  const [typeFilter, setTypeFilter] = useState<PaymentType>('all');
+  const [statusFilter, setStatusFilter] = useState<PaymentStatus>('all');
 
   const { data: payments, isLoading } = useQuery({
-    queryKey: ["payments"],
+    queryKey: ['payments', typeFilter, statusFilter],
     queryFn: async () => {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) throw new Error("Not authenticated");
+      const query = supabase
+        .from('payments')
+        .select(`
+          *,
+          property:properties(address)
+        `);
 
-      const { data: properties } = await supabase
-        .from("properties")
-        .select("id, address")
-        .eq("owner_id", session.session.user.id);
+      if (typeFilter !== 'all') {
+        query.eq('payment_type', typeFilter);
+      }
+      if (statusFilter !== 'all') {
+        query.eq('status', statusFilter);
+      }
 
-      if (!properties) return [];
+      const { data, error } = await query;
 
-      // For now, return mock data based on actual properties
-      return properties.map((property) => ({
-        id: crypto.randomUUID(),
-        amount: 1200,
-        status: Math.random() > 0.5 ? "completed" : "pending",
-        date: new Date().toISOString(),
-        property: {
-          address: property.address,
-        },
-      })) as Payment[];
+      if (error) {
+        toast({
+          title: "Error fetching payments",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      return data as Payment[];
     },
   });
 
-  const filteredPayments = payments?.filter((payment) => 
-    filter === "all" ? true : payment.status === filter
-  );
+  const totalCollected = payments?.reduce((sum, p) => 
+    sum + (p.status === 'completed' ? p.amount : 0), 0
+  ) || 0;
+
+  const totalPending = payments?.reduce((sum, p) => 
+    sum + (p.status === 'pending' ? p.amount : 0), 0
+  ) || 0;
 
   return (
     <DashboardLayout>
@@ -69,7 +87,7 @@ const Payments = () => {
               <div>
                 <p className="text-sm text-gray-500">Total Collected</p>
                 <p className="text-2xl font-semibold">
-                  ${payments?.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0).toLocaleString()}
+                  ${totalCollected.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -83,7 +101,7 @@ const Payments = () => {
               <div>
                 <p className="text-sm text-gray-500">Pending</p>
                 <p className="text-2xl font-semibold">
-                  ${payments?.reduce((sum, p) => sum + (p.status === "pending" ? p.amount : 0), 0).toLocaleString()}
+                  ${totalPending.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -94,24 +112,46 @@ const Payments = () => {
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Payment History</h2>
             <div className="flex gap-2">
-              <Button 
-                variant={filter === "all" ? "default" : "ghost"}
-                onClick={() => setFilter("all")}
-              >
-                All
-              </Button>
-              <Button 
-                variant={filter === "pending" ? "default" : "ghost"}
-                onClick={() => setFilter("pending")}
-              >
-                Pending
-              </Button>
-              <Button 
-                variant={filter === "completed" ? "default" : "ghost"}
-                onClick={() => setFilter("completed")}
-              >
-                Completed
-              </Button>
+              <div className="mr-4">
+                <Button 
+                  variant={typeFilter === 'all' ? "default" : "ghost"}
+                  onClick={() => setTypeFilter('all')}
+                >
+                  All Types
+                </Button>
+                <Button 
+                  variant={typeFilter === 'rent' ? "default" : "ghost"}
+                  onClick={() => setTypeFilter('rent')}
+                >
+                  Rent
+                </Button>
+                <Button 
+                  variant={typeFilter === 'subscription' ? "default" : "ghost"}
+                  onClick={() => setTypeFilter('subscription')}
+                >
+                  Subscription
+                </Button>
+              </div>
+              <div>
+                <Button 
+                  variant={statusFilter === 'all' ? "default" : "ghost"}
+                  onClick={() => setStatusFilter('all')}
+                >
+                  All Status
+                </Button>
+                <Button 
+                  variant={statusFilter === 'pending' ? "default" : "ghost"}
+                  onClick={() => setStatusFilter('pending')}
+                >
+                  Pending
+                </Button>
+                <Button 
+                  variant={statusFilter === 'completed' ? "default" : "ghost"}
+                  onClick={() => setStatusFilter('completed')}
+                >
+                  Completed
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -119,30 +159,39 @@ const Payments = () => {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : !filteredPayments?.length ? (
+          ) : !payments?.length ? (
             <div className="text-center py-8">
               <Receipt className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-4 text-lg font-semibold">No payments found</h3>
               <p className="mt-2 text-gray-500">
-                No payment records match your current filter.
+                No payment records match your current filters.
               </p>
             </div>
           ) : (
             <div className="divide-y">
-              {filteredPayments.map((payment) => (
+              {payments.map((payment) => (
                 <div key={payment.id} className="py-4 flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{payment.property.address}</p>
+                    <p className="font-medium">
+                      {payment.payment_type === 'rent' 
+                        ? `Rent Payment - ${payment.property?.address}`
+                        : 'Subscription Payment'
+                      }
+                    </p>
                     <p className="text-sm text-gray-500">
-                      {new Date(payment.date).toLocaleDateString()}
+                      {new Date(payment.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <span 
                       className={`px-2 py-1 text-sm rounded-full ${
-                        payment.status === "completed" 
-                          ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-700"
+                        payment.status === 'completed' 
+                          ? 'bg-green-100 text-green-700'
+                          : payment.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : payment.status === 'failed'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-gray-100 text-gray-700'
                       }`}
                     >
                       {payment.status}

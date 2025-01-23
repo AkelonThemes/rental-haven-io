@@ -9,6 +9,86 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      payments: {
+        Row: {
+          id: string
+          amount: number
+          payment_type: 'subscription' | 'rent'
+          status: 'pending' | 'completed' | 'failed' | 'refunded'
+          payment_date: string | null
+          stripe_payment_id: string | null
+          subscription_id: string | null
+          payer_profile_id: string | null
+          tenant_id: string | null
+          property_id: string | null
+          rent_period_start: string | null
+          rent_period_end: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          amount: number
+          payment_type: 'subscription' | 'rent'
+          status?: 'pending' | 'completed' | 'failed' | 'refunded'
+          payment_date?: string | null
+          stripe_payment_id?: string | null
+          subscription_id?: string | null
+          payer_profile_id?: string | null
+          tenant_id?: string | null
+          property_id?: string | null
+          rent_period_start?: string | null
+          rent_period_end?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          amount?: number
+          payment_type?: 'subscription' | 'rent'
+          status?: 'pending' | 'completed' | 'failed' | 'refunded'
+          payment_date?: string | null
+          stripe_payment_id?: string | null
+          subscription_id?: string | null
+          payer_profile_id?: string | null
+          tenant_id?: string | null
+          property_id?: string | null
+          rent_period_start?: string | null
+          rent_period_end?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_payer_profile_id_fkey"
+            columns: ["payer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null
