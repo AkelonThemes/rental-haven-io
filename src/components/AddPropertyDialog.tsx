@@ -18,19 +18,28 @@ export function AddPropertyDialog() {
     e.preventDefault();
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const propertyData = {
-      address: formData.get("address") as string,
-      city: formData.get("city") as string,
-      state: formData.get("state") as string,
-      zip_code: formData.get("zipCode") as string,
-      rent_amount: parseFloat(formData.get("rentAmount") as string),
-    };
-
     try {
+      // Get the current user's session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) throw sessionError;
+      if (!session?.user) {
+        throw new Error("You must be logged in to add a property");
+      }
+
+      const formData = new FormData(e.currentTarget);
+      const propertyData = {
+        owner_id: session.user.id,
+        address: formData.get("address") as string,
+        city: formData.get("city") as string,
+        state: formData.get("state") as string,
+        zip_code: formData.get("zipCode") as string,
+        rent_amount: parseFloat(formData.get("rentAmount") as string),
+      };
+
       const { error } = await supabase
         .from("properties")
-        .insert([propertyData]);
+        .insert(propertyData);
 
       if (error) throw error;
 
