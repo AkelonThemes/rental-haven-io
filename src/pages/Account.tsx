@@ -52,7 +52,6 @@ const Account = () => {
 
   const handleUpgradeClick = async () => {
     try {
-      // Check if user already has an active subscription
       if (subscription?.status === 'active') {
         toast({
           title: "Subscription Active",
@@ -100,13 +99,13 @@ const Account = () => {
   const getPlanBadgeVariant = (status: string) => {
     switch (status) {
       case 'active':
-        return 'success';
+        return 'default';
       case 'trialing':
-        return 'warning';
+        return 'secondary';
       case 'canceled':
         return 'destructive';
       default:
-        return 'secondary';
+        return 'outline';
     }
   };
 
