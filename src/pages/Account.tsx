@@ -32,7 +32,7 @@ const Account = () => {
         .from("subscriptions")
         .select("*")
         .eq("profile_id", profile?.id)
-        .single();
+        .maybeSingle();
       
       return subscription;
     },
