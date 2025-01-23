@@ -33,17 +33,25 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth`,
+            data: {
+              full_name: email.split('@')[0], // Default name from email
+              role: 'landlord' // Default role
+            }
+          }
         });
 
         if (error) throw error;
 
-        toast({
-          title: "Success",
-          description: "Check your email to confirm your registration",
-        });
+        // If sign up is successful, user will be automatically signed in
+        if (data.session) {
+          navigate("/");
+        }
+
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -51,7 +59,6 @@ const Auth = () => {
         });
 
         if (error) throw error;
-
         navigate("/");
       }
     } catch (error: any) {

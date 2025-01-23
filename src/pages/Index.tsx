@@ -46,15 +46,28 @@ const Index = () => {
     setAuthLoading(true);
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}`,
+            data: {
+              full_name: email.split('@')[0], // Default name from email
+              role: 'landlord' // Default role
+            }
+          }
         });
+
         if (error) throw error;
-        toast({
-          title: "Success",
-          description: "Please check your email to verify your account",
-        });
+
+        // If sign up is successful and we have a session, close the dialog
+        if (data.session) {
+          setShowAuthDialog(false);
+          toast({
+            title: "Welcome!",
+            description: "Your account has been created successfully.",
+          });
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
