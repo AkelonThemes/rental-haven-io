@@ -35,7 +35,7 @@ export function AddPropertyDialog() {
         province: formData.get("province") as string,
         zip_code: formData.get("zipCode") as string,
         rent_amount: parseFloat(formData.get("rentAmount") as string),
-        status: "vacant" // Default status for new properties
+        status: "vacant" as const // Default status for new properties
       };
 
       const { error } = await supabase
