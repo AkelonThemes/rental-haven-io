@@ -4,12 +4,62 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSignIn = () => {
-    navigate("/");
+  const handleSignIn = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/");
+      } else {
+        // If not logged in, redirect to auth page (you'll need to create this)
+        navigate("/auth");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check authentication status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGetStarted = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/");
+      } else {
+        navigate("/auth");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check authentication status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpgrade = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/account");
+      } else {
+        navigate("/auth");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check authentication status",
+        variant: "destructive",
+      });
+    }
   };
 
   const checkAuth = async () => {
@@ -69,7 +119,7 @@ const Landing = () => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSignIn} className="w-full">Get Started</Button>
+              <Button onClick={handleGetStarted} className="w-full">Get Started</Button>
             </CardFooter>
           </Card>
 
@@ -99,7 +149,7 @@ const Landing = () => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSignIn} variant="default" className="w-full">
+              <Button onClick={handleUpgrade} variant="default" className="w-full">
                 Upgrade Now
               </Button>
             </CardFooter>
