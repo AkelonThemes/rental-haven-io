@@ -11,51 +11,51 @@ export type Database = {
     Tables: {
       payments: {
         Row: {
-          id: string
           amount: number
-          payment_type: 'subscription' | 'rent'
-          status: 'pending' | 'completed' | 'failed' | 'refunded'
+          created_at: string
+          id: string
+          payer_profile_id: string | null
           payment_date: string | null
+          payment_type: Database["public"]["Enums"]["payment_type"]
+          property_id: string | null
+          rent_period_end: string | null
+          rent_period_start: string | null
+          status: Database["public"]["Enums"]["payment_status"]
           stripe_payment_id: string | null
           subscription_id: string | null
-          payer_profile_id: string | null
           tenant_id: string | null
-          property_id: string | null
-          rent_period_start: string | null
-          rent_period_end: string | null
-          created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
           amount: number
-          payment_type: 'subscription' | 'rent'
-          status?: 'pending' | 'completed' | 'failed' | 'refunded'
+          created_at?: string
+          id?: string
+          payer_profile_id?: string | null
           payment_date?: string | null
+          payment_type: Database["public"]["Enums"]["payment_type"]
+          property_id?: string | null
+          rent_period_end?: string | null
+          rent_period_start?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
           stripe_payment_id?: string | null
           subscription_id?: string | null
-          payer_profile_id?: string | null
           tenant_id?: string | null
-          property_id?: string | null
-          rent_period_start?: string | null
-          rent_period_end?: string | null
-          created_at?: string
           updated_at?: string
         }
         Update: {
-          id?: string
           amount?: number
-          payment_type?: 'subscription' | 'rent'
-          status?: 'pending' | 'completed' | 'failed' | 'refunded'
+          created_at?: string
+          id?: string
+          payer_profile_id?: string | null
           payment_date?: string | null
+          payment_type?: Database["public"]["Enums"]["payment_type"]
+          property_id?: string | null
+          rent_period_end?: string | null
+          rent_period_start?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
           stripe_payment_id?: string | null
           subscription_id?: string | null
-          payer_profile_id?: string | null
           tenant_id?: string | null
-          property_id?: string | null
-          rent_period_start?: string | null
-          rent_period_end?: string | null
-          created_at?: string
           updated_at?: string
         }
         Relationships: [
@@ -86,7 +86,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       profiles: {
@@ -266,7 +266,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      payment_status: "pending" | "completed" | "failed" | "refunded"
+      payment_type: "subscription" | "rent"
     }
     CompositeTypes: {
       [_ in never]: never

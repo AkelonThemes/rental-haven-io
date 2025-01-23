@@ -1,28 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Receipt, DollarSign, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 
 type PaymentType = 'all' | 'rent' | 'subscription';
 type PaymentStatus = 'all' | 'pending' | 'completed' | 'failed' | 'refunded';
 
-interface Payment {
-  id: string;
-  amount: number;
-  payment_type: 'subscription' | 'rent';
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
-  payment_date: string | null;
-  property?: {
-    address: string;
-  };
-  created_at: string;
-}
-
-const Payments = () => {
+export default function Payments() {
   const { toast } = useToast();
   const [typeFilter, setTypeFilter] = useState<PaymentType>('all');
   const [statusFilter, setStatusFilter] = useState<PaymentStatus>('all');
@@ -30,7 +19,7 @@ const Payments = () => {
   const { data: payments, isLoading } = useQuery({
     queryKey: ['payments', typeFilter, statusFilter],
     queryFn: async () => {
-      const query = supabase
+      let query = supabase
         .from('payments')
         .select(`
           *,
@@ -38,10 +27,10 @@ const Payments = () => {
         `);
 
       if (typeFilter !== 'all') {
-        query.eq('payment_type', typeFilter);
+        query = query.eq('payment_type', typeFilter);
       }
       if (statusFilter !== 'all') {
-        query.eq('status', statusFilter);
+        query = query.eq('status', statusFilter);
       }
 
       const { data, error } = await query;
@@ -55,7 +44,7 @@ const Payments = () => {
         throw error;
       }
 
-      return data as Payment[];
+      return data;
     },
   });
 
@@ -72,10 +61,7 @@ const Payments = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
-          <Button>
-            <DollarSign className="mr-2 h-4 w-4" />
-            Record Payment
-          </Button>
+          <RecordPaymentDialog />
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -206,6 +192,4 @@ const Payments = () => {
       </div>
     </DashboardLayout>
   );
-};
-
-export default Payments;
+}
