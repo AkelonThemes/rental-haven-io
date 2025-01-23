@@ -32,7 +32,7 @@ export function AddPropertyDialog() {
         owner_id: session.user.id,
         address: formData.get("address") as string,
         city: formData.get("city") as string,
-        state: formData.get("state") as string,
+        province: formData.get("province") as string,
         zip_code: formData.get("zipCode") as string,
         rent_amount: parseFloat(formData.get("rentAmount") as string),
         status: "vacant" // Default status for new properties
@@ -95,11 +95,11 @@ export function AddPropertyDialog() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="state">State</Label>
+            <Label htmlFor="province">Province</Label>
             <Input
-              id="state"
-              name="state"
-              placeholder="NY"
+              id="province"
+              name="province"
+              placeholder="ON"
               required
             />
           </div>
@@ -113,14 +113,14 @@ export function AddPropertyDialog() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="rentAmount">Monthly Rent ($)</Label>
+            <Label htmlFor="rentAmount">Monthly Rent (K)</Label>
             <Input
               id="rentAmount"
               name="rentAmount"
               type="number"
               min="0"
               step="0.01"
-              placeholder="2000"
+              placeholder="2"
               required
             />
           </div>

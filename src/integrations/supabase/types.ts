@@ -123,8 +123,8 @@ export type Database = {
           created_at: string
           id: string
           owner_id: string
+          province: string
           rent_amount: number
-          state: string
           status: string | null
           updated_at: string
           zip_code: string
@@ -135,8 +135,8 @@ export type Database = {
           created_at?: string
           id?: string
           owner_id: string
+          province: string
           rent_amount: number
-          state: string
           status?: string | null
           updated_at?: string
           zip_code: string
@@ -147,8 +147,8 @@ export type Database = {
           created_at?: string
           id?: string
           owner_id?: string
+          province?: string
           rent_amount?: number
-          state?: string
           status?: string | null
           updated_at?: string
           zip_code?: string
