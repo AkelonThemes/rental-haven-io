@@ -44,34 +44,24 @@ const Account = () => {
 
   const handleUpgradeClick = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("No access token found");
-      }
-
-      const response = await fetch(
-        "https://hlljirnsimcmmuuhaurs.supabase.co/functions/v1/create-checkout-session",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-      
-      const { url, error } = await response.json();
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        method: 'POST',
+      });
       
       if (error) {
+        console.error('Error creating checkout session:', error);
         toast({
           title: "Error",
-          description: error,
+          description: error.message || "Failed to start checkout process. Please try again.",
           variant: "destructive",
         });
         return;
       }
 
-      if (url) {
-        window.location.href = url;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
       }
     } catch (error) {
       console.error("Error creating checkout session:", error);
