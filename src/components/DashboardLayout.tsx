@@ -2,12 +2,17 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Users, FileText, Bell, Settings, LogOut } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const menuItems = [
     { icon: <Building2 className="w-5 h-5" />, label: "Properties", href: "/" },
     { icon: <Users className="w-5 h-5" />, label: "Tenants", href: "/tenants" },
@@ -15,6 +20,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
     { icon: <Settings className="w-5 h-5" />, label: "Settings", href: "/settings" },
   ];
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -30,8 +39,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {menuItems.map((item) => (
               <Button
                 key={item.label}
-                variant="ghost"
+                variant={location.pathname === item.href ? "default" : "ghost"}
                 className="w-full justify-start gap-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50"
+                onClick={() => navigate(item.href)}
               >
                 {item.icon}
                 {item.label}
@@ -40,7 +50,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           <div className="absolute bottom-4 w-56">
-            <Button variant="ghost" className="w-full justify-start gap-2 text-gray-600 hover:text-red-600">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
+              onClick={handleSignOut}
+            >
               <LogOut className="w-5 h-5" />
               Logout
             </Button>
