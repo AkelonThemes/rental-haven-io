@@ -27,15 +27,26 @@ export function AddPropertyDialog() {
         throw new Error("You must be logged in to add a property");
       }
 
-      const form = e.currentTarget;
+      const formElement = e.target as HTMLFormElement;
+      const addressInput = formElement.querySelector<HTMLInputElement>('[name="address"]');
+      const cityInput = formElement.querySelector<HTMLInputElement>('[name="city"]');
+      const provinceInput = formElement.querySelector<HTMLInputElement>('[name="province"]');
+      const zipCodeInput = formElement.querySelector<HTMLInputElement>('[name="zipCode"]');
+      const rentAmountInput = formElement.querySelector<HTMLInputElement>('[name="rentAmount"]');
+
+      if (!addressInput?.value || !cityInput?.value || !provinceInput?.value || 
+          !zipCodeInput?.value || !rentAmountInput?.value) {
+        throw new Error("Please fill in all required fields");
+      }
+
       const propertyData = {
         owner_id: session.user.id,
-        address: form.address.value,
-        city: form.city.value,
-        province: form.province.value,
-        zip_code: form.zipCode.value,
-        rent_amount: parseFloat(form.rentAmount.value),
-        status: "vacant" as const // Default status for new properties
+        address: addressInput.value,
+        city: cityInput.value,
+        province: provinceInput.value,
+        zip_code: zipCodeInput.value,
+        rent_amount: parseFloat(rentAmountInput.value),
+        status: "vacant" as const
       };
 
       const { error } = await supabase
