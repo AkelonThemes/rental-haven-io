@@ -20,7 +20,10 @@ serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
-      headers: corsHeaders
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      }
     });
   }
 
@@ -30,7 +33,10 @@ serve(async (req) => {
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
     if (!signature || !webhookSecret) {
-      console.error('Missing signature or webhook secret');
+      console.error('Missing signature or webhook secret', {
+        signature_exists: !!signature,
+        webhook_secret_exists: !!webhookSecret
+      });
       return new Response(
         JSON.stringify({ 
           error: 'Missing signature or webhook secret',
@@ -47,6 +53,11 @@ serve(async (req) => {
     // Get the raw body
     const body = await req.text();
     
+    console.log('Received webhook request', {
+      signature_exists: !!signature,
+      body_length: body.length,
+    });
+
     // Verify the webhook signature
     const event = stripe.webhooks.constructEvent(
       body,
@@ -137,7 +148,10 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ received: true }), { 
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+      }
     });
   } catch (err) {
     console.error('Error processing webhook:', err);
@@ -145,7 +159,10 @@ serve(async (req) => {
       JSON.stringify({ error: err.message }),
       { 
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+        }
       }
     );
   }
