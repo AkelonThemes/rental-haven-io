@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Building2, Users, FileText, Bell, UserCircle, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   
   const menuItems = [
     { icon: <Building2 className="w-5 h-5" />, label: "Properties", href: "/" },
@@ -22,7 +24,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   ];
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate("/landing");
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
