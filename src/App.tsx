@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Tenants from "./pages/Tenants";
 import Notifications from "./pages/Notifications";
 import Payments from "./pages/Payments";
+import Account from "./pages/Account";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/tenants" element={<Tenants />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/payments" element={<Payments />} />
+          <Route path="/account" element={<Account />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
