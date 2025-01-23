@@ -55,7 +55,7 @@ serve(async (req) => {
     let customer_id = undefined;
     if (customers.data.length > 0) {
       customer_id = customers.data[0].id;
-      // Check if already subscribed to this price
+      // Check if already subscribed
       const subscriptions = await stripe.subscriptions.list({
         customer: customers.data[0].id,
         status: 'active',
@@ -64,7 +64,19 @@ serve(async (req) => {
       });
 
       if (subscriptions.data.length > 0) {
-        throw new Error("Customer already has an active subscription");
+        // Create a billing portal session instead
+        const session = await stripe.billingPortal.sessions.create({
+          customer: customer_id,
+          return_url: `${req.headers.get('origin')}/account`,
+        });
+
+        return new Response(
+          JSON.stringify({ url: session.url }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
       }
     }
 
@@ -94,7 +106,7 @@ serve(async (req) => {
       .from('subscriptions')
       .insert({
         profile_id: user.id,
-        plan_type: 'pro', // Adjust based on your plan types
+        plan_type: 'pro',
         status: 'pending',
         stripe_customer_id: customer_id,
       });
