@@ -50,7 +50,7 @@ serve(async (req) => {
       limit: 1
     });
 
-    const price_id = "price_1QkPnyBZnQTVE0K5jo0Lr9cd";  // Updated with your test price ID
+    const price_id = "price_1QkPnyBZnQTVE0K5jo0Lr9cd";  // Your test price ID
 
     let customer_id = undefined;
     if (customers.data.length > 0) {
@@ -80,9 +80,28 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/account`,
+      success_url: `${req.headers.get('origin')}/account?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get('origin')}/account`,
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+        },
+      },
     });
+
+    // Create a pending subscription record
+    const { error: subscriptionError } = await supabaseClient
+      .from('subscriptions')
+      .insert({
+        profile_id: user.id,
+        plan_type: 'pro', // Adjust based on your plan types
+        status: 'pending',
+        stripe_customer_id: customer_id,
+      });
+
+    if (subscriptionError) {
+      console.error('Error creating subscription record:', subscriptionError);
+    }
 
     console.log('Checkout session created:', session.id);
     return new Response(
