@@ -24,7 +24,18 @@ export default function Payments() {
         .from('payments')
         .select(`
           *,
-          property:properties(address)
+          property:properties(
+            id,
+            address,
+            city,
+            state,
+            zip_code,
+            status,
+            rent_amount,
+            owner_id,
+            created_at,
+            updated_at
+          )
         `);
 
       if (typeFilter !== 'all') {
