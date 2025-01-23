@@ -12,6 +12,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+  if (!stripeKey) {
+    console.error('STRIPE_SECRET_KEY is not set in environment variables');
+    return new Response(
+      JSON.stringify({ error: 'Stripe key not configured' }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+
   const supabaseClient = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -28,7 +40,8 @@ serve(async (req) => {
       throw new Error('No email found');
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    console.log('Initializing Stripe with key length:', stripeKey.length);
+    const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
     });
 
