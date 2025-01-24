@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, FileText, Bell, UserCircle, LogOut } from "lucide-react";
+import { Building2, Users, FileText, Bell, UserCircle, LogOut, LayoutDashboard } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { toast } = useToast();
   
   const menuItems = [
+    { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
     { icon: <Building2 className="w-5 h-5" />, label: "Properties", href: "/" },
     { icon: <Users className="w-5 h-5" />, label: "Tenants", href: "/tenants" },
     { icon: <FileText className="w-5 h-5" />, label: "Payments", href: "/payments" },
