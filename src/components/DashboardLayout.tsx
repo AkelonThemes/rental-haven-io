@@ -91,6 +91,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           duration-300
           ease-in-out
           z-50
+          flex flex-col
         `}>
           {/* Desktop Logo */}
           <div className="hidden md:flex items-center space-x-2 mb-8">
@@ -98,7 +99,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <span className="text-xl font-semibold text-gray-900">PropManager</span>
           </div>
           
-          <nav className="space-y-2">
+          {/* Navigation Menu */}
+          <nav className="flex-1 space-y-2">
             {menuItems.map((item) => (
               <Button
                 key={item.label}
@@ -110,22 +112,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {item.label}
               </Button>
             ))}
-            
-            {/* Logout Button - Show in mobile view */}
-            <div className={`md:hidden mt-4 ${isMobile ? 'block' : 'hidden'}`}>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
-                onClick={handleSignOut}
-              >
-                <LogOut className="w-5 h-5" />
-                Logout
-              </Button>
-            </div>
           </nav>
 
+          {/* Mobile Logout Button - At bottom */}
+          <div className="md:hidden mt-auto pt-4 border-t border-gray-200">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </Button>
+          </div>
+
           {/* Desktop Logout Button */}
-          <div className="absolute bottom-4 w-56 hidden md:block">
+          <div className="hidden md:block mt-auto">
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
