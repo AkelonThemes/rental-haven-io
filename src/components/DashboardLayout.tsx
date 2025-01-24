@@ -54,7 +54,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  // Close sidebar when clicking outside in mobile view
   const handleContentClick = () => {
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
@@ -115,7 +114,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           {/* Mobile Logout Button - At bottom */}
-          <div className="md:hidden mt-auto pt-4 border-t border-gray-200">
+          <div className="md:hidden mt-auto pt-4 border-t border-gray-200 sticky bottom-0 bg-white">
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
