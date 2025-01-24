@@ -40,22 +40,19 @@ export function DashboardCards() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return 0;
 
-      // First get the property IDs owned by the user
-      const { data: properties, error: propertiesError } = await supabase
+      const { data: properties } = await supabase
         .from('properties')
         .select('id')
         .eq('owner_id', session.user.id);
-      
-      if (propertiesError) throw propertiesError;
-      
-      // If no properties, return 0 tenants
+
       if (!properties || properties.length === 0) return 0;
 
-      // Get tenant count for these properties
+      const propertyIds = properties.map(p => p.id);
+      
       const { count, error } = await supabase
         .from('tenants')
         .select('*', { count: 'exact', head: true })
-        .in('property_id', properties.map(p => p.id));
+        .in('property_id', propertyIds);
       
       if (error) throw error;
       return count || 0;
