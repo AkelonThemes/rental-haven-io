@@ -54,6 +54,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
+  // Close sidebar when clicking outside in mobile view
+  const handleContentClick = () => {
+    if (isMobile && isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Mobile Header */}
@@ -103,9 +110,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {item.label}
               </Button>
             ))}
+            
+            {/* Logout Button - Show in mobile view */}
+            <div className={`md:hidden mt-4 ${isMobile ? 'block' : 'hidden'}`}>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-5 h-5" />
+                Logout
+              </Button>
+            </div>
           </nav>
 
-          <div className="absolute bottom-4 w-56">
+          {/* Desktop Logout Button */}
+          <div className="absolute bottom-4 w-56 hidden md:block">
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
@@ -118,7 +138,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-4 md:p-8 w-full overflow-x-hidden">
+        <div 
+          className="flex-1 p-4 md:p-8 w-full overflow-x-hidden"
+          onClick={handleContentClick}
+        >
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
