@@ -45,6 +45,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
   };
 
+  const handleMenuItemClick = (href: string) => {
+    navigate(href);
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
+  };
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
@@ -90,10 +97,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 key={item.label}
                 variant={location.pathname === item.href ? "default" : "ghost"}
                 className="w-full justify-start gap-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50"
-                onClick={() => {
-                  navigate(item.href);
-                  if (isMobile) setIsSidebarOpen(false);
-                }}
+                onClick={() => handleMenuItemClick(item.href)}
               >
                 {item.icon}
                 {item.label}
