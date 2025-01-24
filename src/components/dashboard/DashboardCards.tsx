@@ -7,9 +7,13 @@ export function DashboardCards() {
   const { data: propertyCount = 0 } = useQuery({
     queryKey: ['propertyCount'],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authenticated session');
+
       const { count, error } = await supabase
         .from('properties')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', session.user.id);
       
       if (error) throw error;
       return count || 0;
@@ -19,9 +23,18 @@ export function DashboardCards() {
   const { data: tenantCount = 0 } = useQuery({
     queryKey: ['tenantCount'],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authenticated session');
+
       const { count, error } = await supabase
         .from('tenants')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .in('property_id', (
+          supabase
+            .from('properties')
+            .select('id')
+            .eq('owner_id', session.user.id)
+        ));
       
       if (error) throw error;
       return count || 0;
@@ -31,9 +44,13 @@ export function DashboardCards() {
   const { data: totalRent = 0 } = useQuery({
     queryKey: ['totalRent'],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authenticated session');
+
       const { data, error } = await supabase
         .from('properties')
-        .select('rent_amount');
+        .select('rent_amount')
+        .eq('owner_id', session.user.id);
       
       if (error) throw error;
       return data.reduce((sum, property) => sum + (property.rent_amount || 0), 0);

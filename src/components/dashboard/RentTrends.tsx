@@ -12,9 +12,13 @@ export function RentTrends() {
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authenticated session');
+
       const { data, error } = await supabase
         .from('properties')
         .select('*')
+        .eq('owner_id', session.user.id)
         .order('created_at', { ascending: true });
       
       if (error) throw error;
