@@ -69,15 +69,27 @@ export function RentTrends() {
       <div className="h-[250px] md:h-[300px]">
         <ChartContainer config={chartConfig}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rentData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+            <LineChart 
+              data={rentData} 
+              margin={{ 
+                top: 10, 
+                right: 30, 
+                bottom: 30, 
+                left: isMobile ? 50 : 70 
+              }}
+            >
               <XAxis 
                 dataKey="name" 
                 tick={{ fontSize: isMobile ? 10 : 12 }}
                 interval={isMobile ? 1 : 0}
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
               <YAxis 
                 tick={{ fontSize: isMobile ? 10 : 12 }}
-                width={isMobile ? 40 : 60}
+                width={isMobile ? 50 : 70}
+                tickFormatter={(value) => `$${value.toLocaleString()}`}
               />
               <Tooltip content={({ active, payload }) => {
                 if (active && payload && payload.length) {
