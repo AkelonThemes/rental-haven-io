@@ -31,6 +31,14 @@ serve(async (req) => {
     // Get the stripe signature from headers
     const signature = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+
+    // Add authorization header for Stripe
+    const headers = {
+      ...corsHeaders,
+      'Authorization': `Bearer ${stripeSecretKey}`,
+      'Content-Type': 'application/json',
+    };
 
     if (!signature || !webhookSecret) {
       console.error('Missing signature or webhook secret', {
@@ -45,7 +53,7 @@ serve(async (req) => {
         }),
         { 
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers
         }
       );
     }
@@ -73,7 +81,7 @@ serve(async (req) => {
         JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
         { 
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers
         }
       );
     }
@@ -162,7 +170,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ received: true }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers,
         status: 200,
       }
     );
@@ -171,7 +179,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: err.message }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Authorization': `Bearer ${Deno.env.get('STRIPE_SECRET_KEY')}`,
+          'Content-Type': 'application/json'
+        },
         status: 400,
       }
     );
