@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, FileText, Bell, UserCircle, LogOut, LayoutDashboard } from "lucide-react";
+import { Building2, Users, FileText, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   
   const menuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
@@ -42,12 +45,41 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
   };
 
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b">
+        <div className="flex items-center space-x-2">
+          <Building2 className="w-6 h-6 text-primary-600" />
+          <span className="text-lg font-semibold text-gray-900">PropManager</span>
+        </div>
+        <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+          {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </Button>
+      </div>
+
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 min-h-screen bg-white border-r border-gray-200 p-4">
-          <div className="flex items-center space-x-2 mb-8">
+        <div className={`
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+          fixed md:static
+          top-[65px] md:top-0
+          h-[calc(100vh-65px)] md:h-screen
+          w-64
+          bg-white
+          border-r
+          border-gray-200
+          p-4
+          transition-transform
+          duration-300
+          ease-in-out
+          z-50
+        `}>
+          {/* Desktop Logo */}
+          <div className="hidden md:flex items-center space-x-2 mb-8">
             <Building2 className="w-8 h-8 text-primary-600" />
             <span className="text-xl font-semibold text-gray-900">PropManager</span>
           </div>
@@ -58,7 +90,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 key={item.label}
                 variant={location.pathname === item.href ? "default" : "ghost"}
                 className="w-full justify-start gap-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50"
-                onClick={() => navigate(item.href)}
+                onClick={() => {
+                  navigate(item.href);
+                  if (isMobile) setIsSidebarOpen(false);
+                }}
               >
                 {item.icon}
                 {item.label}
@@ -79,7 +114,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 md:p-8 w-full overflow-x-hidden">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

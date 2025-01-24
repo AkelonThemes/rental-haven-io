@@ -8,11 +8,12 @@ import {
   ChartLegend,
 } from "@/components/ui/chart";
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function RentTrends() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
-  // Listen for auth changes and invalidate queries when session changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
@@ -38,7 +39,6 @@ export function RentTrends() {
     },
   });
 
-  // Calculate cumulative rent over time
   const rentData = properties.map((property, index) => {
     const cumulativeRent = properties
       .slice(0, index + 1)
@@ -61,51 +61,60 @@ export function RentTrends() {
   };
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 md:p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold">Rent Growth Trend</h3>
         <p className="text-sm text-gray-500">Cumulative monthly rent over time</p>
       </div>
-      <div className="h-[300px]">
+      <div className="h-[250px] md:h-[300px]">
         <ChartContainer config={chartConfig}>
-          <LineChart data={rentData}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                return (
-                  <div className="rounded-lg border bg-background p-2 shadow-sm">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-[0.70rem] uppercase text-muted-foreground">
-                          Date
-                        </span>
-                        <span className="font-bold text-muted-foreground">
-                          {payload[0].payload.name}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[0.70rem] uppercase text-muted-foreground">
-                          Total Rent
-                        </span>
-                        <span className="font-bold">
-                          ${payload[0].value.toLocaleString()}
-                        </span>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={rentData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: isMobile ? 10 : 12 }}
+                interval={isMobile ? 1 : 0}
+              />
+              <YAxis 
+                tick={{ fontSize: isMobile ? 10 : 12 }}
+                width={isMobile ? 40 : 60}
+              />
+              <Tooltip content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="rounded-lg border bg-background p-2 shadow-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                            Date
+                          </span>
+                          <span className="font-bold text-muted-foreground">
+                            {payload[0].payload.name}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                            Total Rent
+                          </span>
+                          <span className="font-bold">
+                            ${payload[0].value.toLocaleString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              }
-              return null;
-            }} />
-            <Line
-              type="monotone"
-              dataKey="rent"
-              stroke="#2563eb"
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
+                  );
+                }
+                return null;
+              }} />
+              <Line
+                type="monotone"
+                dataKey="rent"
+                stroke="#2563eb"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </ChartContainer>
       </div>
     </Card>

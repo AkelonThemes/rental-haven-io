@@ -7,7 +7,6 @@ import { useEffect } from "react";
 export function DashboardCards() {
   const queryClient = useQueryClient();
 
-  // Listen for auth changes and invalidate queries when session changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       queryClient.invalidateQueries({ queryKey: ['propertyCount'] });
@@ -76,39 +75,39 @@ export function DashboardCards() {
   });
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <Card className="p-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Card className="p-4 md:p-6">
         <div className="flex items-center gap-4">
           <div className="rounded-full bg-blue-100 p-3">
-            <Building2 className="h-6 w-6 text-blue-600" />
+            <Building2 className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Properties</p>
-            <p className="text-2xl font-semibold">{propertyCount}</p>
+            <p className="text-lg md:text-2xl font-semibold">{propertyCount}</p>
           </div>
         </div>
       </Card>
 
-      <Card className="p-6">
+      <Card className="p-4 md:p-6">
         <div className="flex items-center gap-4">
           <div className="rounded-full bg-green-100 p-3">
-            <Users className="h-6 w-6 text-green-600" />
+            <Users className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Tenants</p>
-            <p className="text-2xl font-semibold">{tenantCount}</p>
+            <p className="text-lg md:text-2xl font-semibold">{tenantCount}</p>
           </div>
         </div>
       </Card>
 
-      <Card className="p-6">
+      <Card className="p-4 md:p-6">
         <div className="flex items-center gap-4">
           <div className="rounded-full bg-yellow-100 p-3">
-            <DollarSign className="h-6 w-6 text-yellow-600" />
+            <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-yellow-600" />
           </div>
           <div>
             <p className="text-sm text-gray-500">Monthly Rent</p>
-            <p className="text-2xl font-semibold">${totalRent.toLocaleString()}</p>
+            <p className="text-lg md:text-2xl font-semibold">${totalRent.toLocaleString()}</p>
           </div>
         </div>
       </Card>
