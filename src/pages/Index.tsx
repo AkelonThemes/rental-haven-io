@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Table,
   TableBody,
@@ -39,8 +40,8 @@ const Index = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const isMobile = useIsMobile();
 
-  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -111,7 +112,6 @@ const Index = () => {
     }
   };
 
-  // Fetch properties - The RLS policy will automatically filter for the current user
   const { data: properties = [], isError } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
@@ -170,7 +170,9 @@ const Index = () => {
         </div>
         <div className="flex gap-4">
           <AddPropertyDialog />
-          <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+          {!isMobile && (
+            <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+          )}
         </div>
       </div>
 
