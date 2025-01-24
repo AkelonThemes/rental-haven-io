@@ -43,13 +43,10 @@ export function DashboardCards() {
       const { count, error } = await supabase
         .from('tenants')
         .select('*', { count: 'exact', head: true })
-        .in('property_id', 
-          supabase
-            .from('properties')
-            .select('id')
-            .eq('owner_id', session.user.id)
-            .values('id')
-        );
+        .filter('property_id', 'in', `(
+          SELECT id FROM properties 
+          WHERE owner_id = '${session.user.id}'
+        )`);
       
       if (error) throw error;
       return count || 0;
