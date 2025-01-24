@@ -1,14 +1,28 @@
 import { Card } from "@/components/ui/card";
 import { Building2, Users, DollarSign } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export function DashboardCards() {
+  const queryClient = useQueryClient();
+
+  // Listen for auth changes and invalidate queries when session changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      queryClient.invalidateQueries({ queryKey: ['propertyCount'] });
+      queryClient.invalidateQueries({ queryKey: ['tenantCount'] });
+      queryClient.invalidateQueries({ queryKey: ['totalRent'] });
+    });
+
+    return () => subscription.unsubscribe();
+  }, [queryClient]);
+
   const { data: propertyCount = 0 } = useQuery({
     queryKey: ['propertyCount'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No authenticated session');
+      if (!session) return 0;
 
       const { count, error } = await supabase
         .from('properties')
@@ -24,17 +38,18 @@ export function DashboardCards() {
     queryKey: ['tenantCount'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No authenticated session');
+      if (!session) return 0;
 
       const { count, error } = await supabase
         .from('tenants')
         .select('*', { count: 'exact', head: true })
-        .in('property_id', (
+        .in('property_id', 
           supabase
             .from('properties')
             .select('id')
             .eq('owner_id', session.user.id)
-        ));
+            .values('id')
+        );
       
       if (error) throw error;
       return count || 0;
@@ -45,7 +60,7 @@ export function DashboardCards() {
     queryKey: ['totalRent'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No authenticated session');
+      if (!session) return 0;
 
       const { data, error } = await supabase
         .from('properties')

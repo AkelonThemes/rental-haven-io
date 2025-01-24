@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -9,11 +10,22 @@ import {
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 export function RentTrends() {
+  const queryClient = useQueryClient();
+
+  // Listen for auth changes and invalidate queries when session changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+    });
+
+    return () => subscription.unsubscribe();
+  }, [queryClient]);
+
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No authenticated session');
+      if (!session) return [];
 
       const { data, error } = await supabase
         .from('properties')
