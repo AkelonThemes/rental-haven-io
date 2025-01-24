@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Tables } from "@/integrations/supabase/types";
 
 interface PaymentFormData {
   amount: number;
@@ -18,6 +19,12 @@ interface PaymentFormData {
   rent_period_start?: string;
   rent_period_end?: string;
 }
+
+type TenantWithProfile = Tables<"tenants"> & {
+  profile: {
+    full_name: string | null;
+  };
+};
 
 export function RecordPaymentDialog() {
   const { toast } = useToast();
@@ -38,17 +45,14 @@ export function RecordPaymentDialog() {
   });
 
   // Fetch tenants based on selected property
-  const { data: tenants } = useQuery({
+  const { data: tenants } = useQuery<TenantWithProfile[]>({
     queryKey: ['tenants', form.watch('property_id')],
     queryFn: async () => {
       if (!form.watch('property_id')) return [];
       
       const { data, error } = await supabase
         .from('tenants')
-        .select(`
-          *,
-          profile:profiles(full_name)
-        `)
+        .select('*, profile:profiles(full_name)')
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
