@@ -34,6 +34,16 @@ export function RentTrends() {
     };
   });
 
+  const chartConfig = {
+    rent: {
+      label: "Monthly Rent",
+      theme: {
+        light: "#2563eb",
+        dark: "#3b82f6",
+      },
+    },
+  };
+
   return (
     <Card className="p-6">
       <div className="mb-4">
@@ -41,7 +51,7 @@ export function RentTrends() {
         <p className="text-sm text-gray-500">Cumulative monthly rent over time</p>
       </div>
       <div className="h-[300px]">
-        <ChartContainer>
+        <ChartContainer config={chartConfig}>
           <LineChart data={rentData}>
             <XAxis dataKey="name" />
             <YAxis />
