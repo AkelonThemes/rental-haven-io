@@ -10,6 +10,7 @@ import Tenants from "./pages/Tenants";
 import Notifications from "./pages/Notifications";
 import Payments from "./pages/Payments";
 import Account from "./pages/Account";
+import Dashboard from "./pages/Dashboard";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
 
@@ -53,7 +54,11 @@ const App = () => {
             
             {/* Protected routes */}
             <Route
-              path="/"
+              path="/dashboard"
+              element={session ? <Dashboard /> : <Navigate to="/landing" />}
+            />
+            <Route
+              path="/properties"
               element={session ? <Index /> : <Navigate to="/landing" />}
             />
             <Route
@@ -71,6 +76,11 @@ const App = () => {
             <Route
               path="/account"
               element={session ? <Account /> : <Navigate to="/landing" />}
+            />
+            {/* Redirect root to dashboard when authenticated */}
+            <Route
+              path="/"
+              element={session ? <Navigate to="/dashboard" /> : <Navigate to="/landing" />}
             />
           </Routes>
         </BrowserRouter>

@@ -17,7 +17,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   const menuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
-    { icon: <Building2 className="w-5 h-5" />, label: "Properties", href: "/" },
+    { icon: <Building2 className="w-5 h-5" />, label: "Properties", href: "/properties" },
     { icon: <Users className="w-5 h-5" />, label: "Tenants", href: "/tenants" },
     { icon: <FileText className="w-5 h-5" />, label: "Payments", href: "/payments" },
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
