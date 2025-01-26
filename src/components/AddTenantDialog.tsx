@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const formSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
@@ -23,6 +24,7 @@ const formSchema = z.object({
 export function AddTenantDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -88,6 +90,10 @@ export function AddTenantDialog() {
         });
 
       if (tenantError) throw tenantError;
+
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['tenantCount'] });
 
       toast({
         title: "Success",

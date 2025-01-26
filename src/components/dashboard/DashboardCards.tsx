@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Building2, Users, DollarSign } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,16 +46,17 @@ export function DashboardCards() {
 
       if (!properties || properties.length === 0) return 0;
 
-      const propertyIds = properties.map(p => p.id);
-      
       const { count, error } = await supabase
         .from('tenants')
         .select('*', { count: 'exact', head: true })
-        .in('property_id', propertyIds);
+        .in('property_id', properties.map(p => p.id));
       
       if (error) throw error;
       return count || 0;
     },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60
   });
 
   const { data: totalRent = 0 } = useQuery({
