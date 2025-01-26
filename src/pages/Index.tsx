@@ -99,19 +99,6 @@ const Index = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setShowAuthDialog(true);
-    }
-  };
-
   const { data: properties = [], isError } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
@@ -175,12 +162,7 @@ const Index = () => {
           <h1 className="text-2xl font-bold text-gray-900">Properties</h1>
           <p className="text-gray-600 mt-1">Manage your real estate portfolio</p>
         </div>
-        <div className="flex gap-4">
-          <AddPropertyDialog />
-          {!isMobile && (
-            <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
-          )}
-        </div>
+        <AddPropertyDialog />
       </div>
 
       <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
