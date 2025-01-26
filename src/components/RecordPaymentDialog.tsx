@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Tables } from "@/integrations/supabase/types";
 
 interface PaymentFormData {
   amount: number;
@@ -20,7 +19,13 @@ interface PaymentFormData {
   rent_period_end?: string;
 }
 
-type TenantWithProfile = Tables<"tenants"> & {
+type Property = {
+  id: string;
+  address: string;
+};
+
+type Tenant = {
+  id: string;
   profile: {
     full_name: string | null;
   };
@@ -32,12 +37,12 @@ export function RecordPaymentDialog() {
   const form = useForm<PaymentFormData>();
 
   // Fetch properties for the dropdown
-  const { data: properties } = useQuery({
+  const { data: properties } = useQuery<Property[]>({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('properties')
-        .select('*');
+        .select('id, address');
       
       if (error) throw error;
       return data;
@@ -45,14 +50,14 @@ export function RecordPaymentDialog() {
   });
 
   // Fetch tenants based on selected property
-  const { data: tenants } = useQuery<TenantWithProfile[]>({
+  const { data: tenants } = useQuery<Tenant[]>({
     queryKey: ['tenants', form.watch('property_id')],
     queryFn: async () => {
       if (!form.watch('property_id')) return [];
       
       const { data, error } = await supabase
         .from('tenants')
-        .select('*, profile:profiles(full_name)')
+        .select('id, profile:profiles(full_name)')
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
