@@ -4,23 +4,16 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PaymentFormData } from "./types";
+import { PaymentFormData, Property, TenantProfile } from "./types";
 
 interface RentPaymentFieldsProps {
   form: UseFormReturn<PaymentFormData>;
 }
 
-type Property = {
+interface Tenant {
   id: string;
-  address: string;
-};
-
-type Tenant = {
-  id: string;
-  profile: {
-    full_name: string | null;
-  } | null;
-};
+  profile: TenantProfile | null;
+}
 
 export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
   const { data: properties = [] } = useQuery({

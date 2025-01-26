@@ -10,4 +10,7 @@ if (!SUPABASE_ANON_KEY) {
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient<Database>(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY || 'dummy-key-for-build'  // Provide a fallback to prevent build errors
+);
