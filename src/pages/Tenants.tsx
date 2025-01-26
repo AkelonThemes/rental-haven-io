@@ -17,11 +17,11 @@ import {
 interface Tenant {
   id: string;
   profile: {
-    full_name: string;
-  };
+    full_name: string | null;
+  } | null;
   property: {
     address: string;
-  };
+  } | null;
   lease_start_date: string;
   lease_end_date: string;
   rent_amount: number;
@@ -109,8 +109,12 @@ const Tenants = () => {
             <TableBody>
               {tenants.map((tenant) => (
                 <TableRow key={tenant.id}>
-                  <TableCell className="font-medium">{tenant.profile.full_name}</TableCell>
-                  <TableCell>{tenant.property.address}</TableCell>
+                  <TableCell className="font-medium">
+                    {tenant.profile?.full_name || 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    {tenant.property?.address || 'N/A'}
+                  </TableCell>
                   <TableCell>
                     {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
                   </TableCell>
