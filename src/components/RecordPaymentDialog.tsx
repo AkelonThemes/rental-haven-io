@@ -36,7 +36,7 @@ export function RecordPaymentDialog() {
   const [open, setOpen] = useState(false);
   const form = useForm<PaymentFormData>();
 
-  const { data: properties } = useQuery({
+  const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,11 +44,11 @@ export function RecordPaymentDialog() {
         .select('id, address');
       
       if (error) throw error;
-      return (data || []) as SimpleProperty[];
+      return data as SimpleProperty[];
     },
   });
 
-  const { data: tenants } = useQuery({
+  const { data: tenants = [] } = useQuery({
     queryKey: ['tenants', form.watch('property_id')],
     queryFn: async () => {
       if (!form.watch('property_id')) return [];
@@ -59,7 +59,7 @@ export function RecordPaymentDialog() {
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
-      return (data || []) as SimpleTenant[];
+      return data as SimpleTenant[];
     },
     enabled: !!form.watch('property_id'),
   });
@@ -167,7 +167,7 @@ export function RecordPaymentDialog() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {properties?.map((property) => (
+                          {properties.map((property) => (
                             <SelectItem key={property.id} value={property.id}>
                               {property.address}
                             </SelectItem>
@@ -196,7 +196,7 @@ export function RecordPaymentDialog() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {tenants?.map((tenant) => (
+                            {tenants.map((tenant) => (
                               <SelectItem key={tenant.id} value={tenant.id}>
                                 {tenant.profile.full_name}
                               </SelectItem>
