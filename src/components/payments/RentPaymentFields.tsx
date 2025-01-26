@@ -19,7 +19,7 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
         .select('id, address');
       
       if (error) throw error;
-      return (data || []) as Property[];
+      return data as Property[];
     }
   });
 
@@ -34,7 +34,7 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
-      return (data || []) as Tenant[];
+      return data as Tenant[];
     },
     enabled: !!form.watch('property_id')
   });

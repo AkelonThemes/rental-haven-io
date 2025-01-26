@@ -60,7 +60,7 @@ export function AddTenantDialog() {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: crypto.randomUUID(),
+          id: session.session.user.id,
           full_name: values.full_name,
           role: 'tenant'
         })
