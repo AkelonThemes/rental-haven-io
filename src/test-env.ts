@@ -22,8 +22,10 @@ async function testEnvironmentVariables() {
 
   // Test Stripe connection
   try {
-    const stripe = new Stripe(stripeKey || "", {
-      apiVersion: "2024-12-18.acacia",
+    if (!stripeKey) throw new Error("Stripe key is missing");
+    
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: "2023-10-16",
     });
     const balance = await stripe.balance.retrieve();
     console.log("- Stripe Connection: ✅ Success");
@@ -44,6 +46,10 @@ async function testEnvironmentVariables() {
 
   // Test Supabase connection
   try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Supabase URL or Anon Key is missing");
+    }
+    
     const { data, error } = await supabase.from("subscriptions").select("count");
     if (error) throw error;
     console.log("- Supabase Connection: ✅ Success");
@@ -53,4 +59,4 @@ async function testEnvironmentVariables() {
   }
 }
 
-testEnvironmentVariables(); 
+testEnvironmentVariables();
