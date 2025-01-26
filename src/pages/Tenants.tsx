@@ -3,9 +3,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Users, Mail, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AddTenantDialog } from "@/components/AddTenantDialog";
 
 interface Tenant {
   id: string;
@@ -32,8 +32,6 @@ const Tenants = () => {
         throw new Error('Not authenticated');
       }
 
-      // This query will automatically be restricted by RLS to only show tenants
-      // for properties owned by the current landlord
       const { data, error } = await supabase
         .from('tenants')
         .select(`
@@ -66,10 +64,7 @@ const Tenants = () => {
           <h1 className="text-2xl font-bold text-gray-900">Tenants</h1>
           <p className="text-gray-600 mt-1">Manage your property tenants</p>
         </div>
-        <Button>
-          <Users className="w-4 h-4 mr-2" />
-          Add Tenant
-        </Button>
+        <AddTenantDialog />
       </div>
 
       {isError ? (
