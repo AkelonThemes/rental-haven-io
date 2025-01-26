@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Mail, Phone, Calendar } from "lucide-react";
+import { Users, Mail, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Tenant {
@@ -32,6 +32,8 @@ const Tenants = () => {
         throw new Error('Not authenticated');
       }
 
+      // This query will automatically be restricted by RLS to only show tenants
+      // for properties owned by the current landlord
       const { data, error } = await supabase
         .from('tenants')
         .select(`
