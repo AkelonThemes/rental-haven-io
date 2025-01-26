@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Users, FileText, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench } from "lucide-react";
@@ -20,6 +20,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const { role } = useRole();
   
+  useEffect(() => {
+    setIsSidebarOpen(!isMobile);
+  }, [isMobile]);
+
   const landlordMenuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
     { icon: <Building2 className="w-5 h-5" />, label: "Properties", href: "/properties" },
@@ -66,16 +70,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  const handleContentClick = () => {
-    if (isMobile && isSidebarOpen) {
-      setIsSidebarOpen(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-white border-b">
         <div className="flex items-center space-x-2">
           <Building2 className="w-6 h-6 text-primary-600" />
           <span className="text-lg font-semibold text-gray-900">PropManager</span>
@@ -85,77 +83,67 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </Button>
       </div>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <div className={`
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0
-          fixed md:static
-          top-[65px] md:top-0
-          h-[calc(100vh-65px)] md:h-screen
-          w-64
-          bg-white
-          border-r
-          border-gray-200
-          p-4
-          transition-transform
-          duration-300
-          ease-in-out
-          z-50
-          flex flex-col
-        `}>
-          {/* Desktop Logo */}
-          <div className="hidden md:flex items-center space-x-2 mb-8">
-            <Building2 className="w-8 h-8 text-primary-600" />
-            <span className="text-xl font-semibold text-gray-900">PropManager</span>
-          </div>
-          
-          {/* Navigation Menu */}
-          <nav className="flex-1 space-y-2">
-            {menuItems.map((item) => (
-              <Button
-                key={item.label}
-                variant={location.pathname === item.href ? "default" : "ghost"}
-                className="w-full justify-start gap-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50"
-                onClick={() => handleMenuItemClick(item.href)}
-              >
-                {item.icon}
-                {item.label}
-              </Button>
-            ))}
-          </nav>
+      {/* Sidebar Overlay */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-          {/* Mobile Logout Button - At bottom */}
-          <div className="md:hidden mt-auto pt-4 border-t border-gray-200 sticky bottom-0 bg-white">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
+      {/* Sidebar */}
+      <div className={`
+        fixed md:static h-full w-64 bg-white border-r transform transition-transform duration-200 ease-in-out
+        ${isMobile ? 'z-50' : ''}
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="flex flex-col h-full">
+          <div className="p-4 flex-1">
+            <div className="hidden md:flex items-center space-x-2 mb-8">
+              <Building2 className="w-6 h-6 text-primary-600" />
+              <span className="text-lg font-semibold text-gray-900">PropManager</span>
+            </div>
+            <nav className="space-y-1">
+              {menuItems.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => handleMenuItemClick(item.href)}
+                  className={`
+                    w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm
+                    ${location.pathname === item.href
+                      ? 'bg-primary text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                    }
+                  `}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+          {/* Sign Out Button */}
+          <div className="p-4 border-t">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
               onClick={handleSignOut}
             >
-              <LogOut className="w-5 h-5" />
-              Logout
-            </Button>
-          </div>
-
-          {/* Desktop Logout Button */}
-          <div className="hidden md:block mt-auto">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start gap-2 text-gray-600 hover:text-red-600"
-              onClick={handleSignOut}
-            >
-              <LogOut className="w-5 h-5" />
-              Logout
+              <LogOut className="w-5 h-5 mr-2" />
+              Sign Out
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div 
-          className="flex-1 p-4 md:p-8 w-full overflow-x-hidden"
-          onClick={handleContentClick}
-        >
-          <div className="max-w-7xl mx-auto">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile header spacer */}
+        <div className="h-16 md:h-0" />
+        
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="container mx-auto p-6">
             {children}
           </div>
         </div>

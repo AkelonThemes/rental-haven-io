@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -7,7 +7,7 @@ import {
   ChartTooltip,
   ChartLegend,
 } from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function RentTrends() {
@@ -61,74 +61,48 @@ export function RentTrends() {
   };
 
   return (
-    <Card className="p-4 md:p-6">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold">Rent Growth Trend</h3>
-        <p className="text-sm text-gray-500">Cumulative monthly rent over time</p>
-      </div>
-      <div className="h-[250px] md:h-[300px]">
-        <ChartContainer config={chartConfig}>
+    <Card>
+      <CardHeader>
+        <CardTitle>Rent Trends</CardTitle>
+        <CardDescription>Monthly rent collection overview</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[300px] w-full p-4">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={rentData} 
-              margin={{ 
-                top: 10, 
-                right: 30, 
-                bottom: 30, 
-                left: isMobile ? 50 : 70 
+            <LineChart
+              data={rentData}
+              margin={{
+                top: 5,
+                right: 10,
+                left: 0,
+                bottom: 5,
               }}
             >
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: isMobile ? 10 : 12 }}
-                interval={isMobile ? 1 : 0}
-                angle={-45}
-                textAnchor="end"
-                height={60}
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="name"
+                tickMargin={10}
+                padding={{ left: 10, right: 10 }}
               />
-              <YAxis 
-                tick={{ fontSize: isMobile ? 10 : 12 }}
-                width={isMobile ? 50 : 70}
-                tickFormatter={(value) => `$${value.toLocaleString()}`}
+              <YAxis
+                tickFormatter={(value) => `$${value}`}
+                tickMargin={10}
               />
-              <Tooltip content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div className="rounded-lg border bg-background p-2 shadow-sm">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
-                            Date
-                          </span>
-                          <span className="font-bold text-muted-foreground">
-                            {payload[0].payload.name}
-                          </span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
-                            Total Rent
-                          </span>
-                          <span className="font-bold">
-                            ${payload[0].value.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              }} />
+              <Tooltip
+                formatter={(value) => [`$${value}`, "Amount"]}
+                labelFormatter={(label) => `Month: ${label}`}
+              />
               <Line
                 type="monotone"
                 dataKey="rent"
-                stroke="#2563eb"
+                stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 dot={false}
               />
             </LineChart>
           </ResponsiveContainer>
-        </ChartContainer>
-      </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }
