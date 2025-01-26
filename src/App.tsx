@@ -53,9 +53,31 @@ const App = () => {
   // Show loading state
   if (loading || roleLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex flex-col items-center justify-center h-screen space-y-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="text-sm text-gray-600">
+          {loading ? "Checking authentication..." : "Loading user role..."}
+        </div>
       </div>
+    );
+  }
+
+  // Show landing page if no session
+  if (!session) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="*" element={<Navigate to="/landing" />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
     );
   }
 

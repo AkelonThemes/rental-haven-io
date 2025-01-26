@@ -13,32 +13,20 @@ const supabaseClient = createClient(
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'stripe-signature, content-type',
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      }
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     // Get the stripe signature from headers
     const signature = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-
-    // Add authorization header for Stripe
-    const headers = {
-      ...corsHeaders,
-      'Authorization': `Bearer ${stripeSecretKey}`,
-      'Content-Type': 'application/json',
-    };
 
     if (!signature || !webhookSecret) {
       console.error('Missing signature or webhook secret', {
@@ -46,14 +34,10 @@ serve(async (req) => {
         webhook_secret_exists: !!webhookSecret
       });
       return new Response(
-        JSON.stringify({ 
-          error: 'Missing signature or webhook secret',
-          signature_present: !!signature,
-          secret_present: !!webhookSecret 
-        }),
+        JSON.stringify({ error: 'Missing signature or webhook secret' }),
         { 
-          status: 400,
-          headers
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         }
       );
     }
@@ -80,8 +64,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
         { 
-          status: 400,
-          headers
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         }
       );
     }
@@ -170,7 +154,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ received: true }),
       { 
-        headers,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
         status: 200,
       }
     );
@@ -179,12 +163,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: err.message }),
       { 
-        headers: {
-          ...corsHeaders,
-          'Authorization': `Bearer ${Deno.env.get('STRIPE_SECRET_KEY')}`,
-          'Content-Type': 'application/json'
-        },
-        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 500,
       }
     );
   }
