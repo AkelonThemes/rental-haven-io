@@ -19,18 +19,16 @@ interface PaymentFormData {
   rent_period_end?: string;
 }
 
-interface Property {
+type SimpleProperty = {
   id: string;
   address: string;
 }
 
-interface TenantProfile {
-  full_name: string | null;
-}
-
-interface Tenant {
+type SimpleTenant = {
   id: string;
-  profile: TenantProfile;
+  profile: {
+    full_name: string | null;
+  };
 }
 
 export function RecordPaymentDialog() {
@@ -38,22 +36,19 @@ export function RecordPaymentDialog() {
   const [open, setOpen] = useState(false);
   const form = useForm<PaymentFormData>();
 
-  // Fetch properties with explicit type annotation
-  const { data: properties } = useQuery<Property[]>({
+  const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('properties')
-        .select('id, address')
-        .returns<Property[]>();
+        .select('id, address');
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as SimpleProperty[];
     },
   });
 
-  // Fetch tenants with explicit type annotation
-  const { data: tenants } = useQuery<Tenant[]>({
+  const { data: tenants } = useQuery({
     queryKey: ['tenants', form.watch('property_id')],
     queryFn: async () => {
       if (!form.watch('property_id')) return [];
@@ -61,11 +56,10 @@ export function RecordPaymentDialog() {
       const { data, error } = await supabase
         .from('tenants')
         .select('id, profile:profiles(full_name)')
-        .eq('property_id', form.watch('property_id'))
-        .returns<Tenant[]>();
+        .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as SimpleTenant[];
     },
     enabled: !!form.watch('property_id'),
   });
