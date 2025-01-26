@@ -18,22 +18,36 @@ serve(async (req) => {
     // Get the stripe signature from headers
     const signature = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
 
-    if (!signature || !webhookSecret) {
-      console.error('Missing signature or webhook secret', {
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+    console.log('Webhook secret exists:', !!webhookSecret);
+    console.log('Stripe key exists:', !!stripeKey);
+    console.log('Signature exists:', !!signature);
+
+    if (!signature || !webhookSecret || !stripeKey) {
+      console.error('Missing required configuration', {
         signature_exists: !!signature,
-        webhook_secret_exists: !!webhookSecret
+        webhook_secret_exists: !!webhookSecret,
+        stripe_key_exists: !!stripeKey
       });
       return new Response(
-        JSON.stringify({ error: 'Missing signature or webhook secret' }),
+        JSON.stringify({ 
+          error: 'Missing required configuration',
+          details: {
+            signature: !!signature,
+            webhook_secret: !!webhookSecret,
+            stripe_key: !!stripeKey
+          }
+        }),
         { 
           status: 401,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
     });
 
@@ -60,7 +74,7 @@ serve(async (req) => {
         JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
         { 
           status: 401,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -154,7 +168,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ received: true }),
       { 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     );
@@ -163,7 +177,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: err.message }),
       { 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }
     );

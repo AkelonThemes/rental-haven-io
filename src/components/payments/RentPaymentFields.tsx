@@ -10,7 +10,6 @@ interface RentPaymentFieldsProps {
   form: UseFormReturn<PaymentFormData>;
 }
 
-// Simplified type definitions to prevent recursion
 interface Property {
   id: string;
   address: string;
@@ -24,7 +23,7 @@ interface Tenant {
 }
 
 export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
-  const { data: properties = [] } = useQuery({
+  const { data: properties = [] } = useQuery<Property[]>({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data: session } = await supabase.auth.getSession();
@@ -38,11 +37,11 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
         .select('id, address');
       
       if (error) throw error;
-      return data as Property[];
+      return data;
     }
   });
 
-  const { data: tenants = [] } = useQuery({
+  const { data: tenants = [] } = useQuery<Tenant[]>({
     queryKey: ['tenants', form.watch('property_id')],
     queryFn: async () => {
       if (!form.watch('property_id')) return [];
@@ -59,7 +58,7 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
-      return data as Tenant[];
+      return data;
     },
     enabled: !!form.watch('property_id')
   });
