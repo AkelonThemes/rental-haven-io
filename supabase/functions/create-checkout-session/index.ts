@@ -70,7 +70,7 @@ serve(async (req) => {
         // Create a billing portal session instead
         const session = await stripe.billingPortal.sessions.create({
           customer: customer_id,
-          return_url: `${req.headers.get('origin')}/account`,
+          return_url: 'https://rental-haven-io.lovable.app/account',
         });
 
         return new Response(
@@ -95,8 +95,8 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: 'http://localhost:8080/account?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'http://localhost:8080/account',
+      success_url: 'https://rental-haven-io.lovable.app/account?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'https://rental-haven-io.lovable.app/account',
       subscription_data: {
         metadata: {
           user_id: user.id,
