@@ -38,20 +38,21 @@ export function RecordPaymentDialog() {
   const [open, setOpen] = useState(false);
   const form = useForm<PaymentFormData>();
 
-  // Fetch properties for the dropdown
+  // Fetch properties with explicit type annotation
   const { data: properties } = useQuery<Property[]>({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('properties')
-        .select('id, address');
+        .select('id, address')
+        .returns<Property[]>();
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
-  // Fetch tenants based on selected property
+  // Fetch tenants with explicit type annotation
   const { data: tenants } = useQuery<Tenant[]>({
     queryKey: ['tenants', form.watch('property_id')],
     queryFn: async () => {
@@ -60,10 +61,11 @@ export function RecordPaymentDialog() {
       const { data, error } = await supabase
         .from('tenants')
         .select('id, profile:profiles(full_name)')
-        .eq('property_id', form.watch('property_id'));
+        .eq('property_id', form.watch('property_id'))
+        .returns<Tenant[]>();
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!form.watch('property_id'),
   });
