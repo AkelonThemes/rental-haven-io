@@ -10,7 +10,7 @@ import { DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type PaymentFormData = {
+interface PaymentFormData {
   amount: number;
   payment_type: 'rent' | 'subscription';
   property_id?: string;
@@ -19,16 +19,16 @@ type PaymentFormData = {
   rent_period_end?: string;
 }
 
-type Property = {
+interface Property {
   id: string;
   address: string;
 }
 
-type TenantProfile = {
+interface TenantProfile {
   full_name: string | null;
 }
 
-type Tenant = {
+interface Tenant {
   id: string;
   profile: TenantProfile;
 }
