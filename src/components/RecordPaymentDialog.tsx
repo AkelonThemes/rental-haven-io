@@ -19,17 +19,19 @@ interface PaymentFormData {
   rent_period_end?: string;
 }
 
-type Property = {
+interface Property {
   id: string;
   address: string;
-};
+}
 
-type Tenant = {
+interface TenantProfile {
+  full_name: string | null;
+}
+
+interface Tenant {
   id: string;
-  profile: {
-    full_name: string | null;
-  };
-};
+  profile: TenantProfile;
+}
 
 export function RecordPaymentDialog() {
   const { toast } = useToast();
