@@ -15,6 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const formSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
+  email: z.string().email("Invalid email address"),
   property_id: z.string().min(1, "Property is required"),
   lease_start_date: z.string().min(1, "Lease start date is required"),
   lease_end_date: z.string().min(1, "Lease end date is required"),
@@ -30,6 +31,7 @@ export function AddTenantDialog() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: "",
+      email: "",
       property_id: "",
       lease_start_date: "",
       lease_end_date: "",
@@ -55,56 +57,53 @@ export function AddTenantDialog() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) throw new Error('Not authenticated');
-
-      // First check if a profile already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', session.session.user.id)
-        .single();
-
-      // Only create profile if it doesn't exist
-      if (!existingProfile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: session.session.user.id,
+      // 1. Create auth user for tenant
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.email,
+        password: generateRandomPassword(), // Implement this function
+        options: {
+          data: {
             full_name: values.full_name,
             role: 'tenant'
-          });
+          }
+        }
+      });
 
-        if (profileError) throw profileError;
-      }
+      if (authError) throw authError;
 
-      // Create the tenant record
+      // 2. Create profile for tenant
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user!.id,
+          full_name: values.full_name,
+          role: 'tenant'
+        });
+
+      if (profileError) throw profileError;
+
+      // 3. Create tenant record
       const { error: tenantError } = await supabase
         .from('tenants')
         .insert({
+          profile_id: authData.user!.id,
           property_id: values.property_id,
-          profile_id: session.session.user.id,
           lease_start_date: values.lease_start_date,
           lease_end_date: values.lease_end_date,
-          rent_amount: parseFloat(values.rent_amount),
+          rent_amount: parseFloat(values.rent_amount)
         });
 
       if (tenantError) throw tenantError;
 
-      // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
-      queryClient.invalidateQueries({ queryKey: ['tenantCount'] });
-
+      setOpen(false);
       toast({
         title: "Success",
         description: "Tenant added successfully",
       });
-
-      setOpen(false);
-      form.reset();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: "Error adding tenant",
         description: error.message,
         variant: "destructive",
       });
@@ -133,6 +132,19 @@ export function AddTenantDialog() {
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="john@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

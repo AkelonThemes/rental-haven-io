@@ -34,19 +34,27 @@ const Tenants = () => {
     queryKey: ['tenants'],
     queryFn: async () => {
       const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) {
-        throw new Error('Not authenticated');
-      }
+      if (!session.session) return [];
 
       const { data, error } = await supabase
         .from('tenants')
         .select(`
           id,
-          profile:profiles(full_name),
-          property:properties(address),
+          profile_id,
+          property_id,
           lease_start_date,
           lease_end_date,
-          rent_amount
+          rent_amount,
+          profiles:profile_id (
+            id,
+            full_name
+          ),
+          properties:property_id (
+            id,
+            address,
+            city,
+            province
+          )
         `)
         .eq('properties.owner_id', session.session.user.id);
 
@@ -59,7 +67,16 @@ const Tenants = () => {
         throw error;
       }
 
-      return data as Tenant[];
+      if (!data) return [];
+
+      return data.map(tenant => ({
+        id: tenant.id,
+        profile: tenant.profiles,
+        property: tenant.properties,
+        lease_start_date: tenant.lease_start_date,
+        lease_end_date: tenant.lease_end_date,
+        rent_amount: tenant.rent_amount
+      }));
     },
     refetchOnWindowFocus: false,
     refetchOnMount: true,

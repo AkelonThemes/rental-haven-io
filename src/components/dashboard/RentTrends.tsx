@@ -1,93 +1,65 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartLegend,
-} from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export function RentTrends() {
-  const queryClient = useQueryClient();
+interface RentTrendsProps {
+  data?: any[];
+  isLoading: boolean;
+}
+
+export function RentTrends({ data, isLoading }: RentTrendsProps) {
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      queryClient.invalidateQueries({ queryKey: ['properties'] });
-    });
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Rent Trends</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[300px] w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
-    return () => subscription.unsubscribe();
-  }, [queryClient]);
+  // Process data for the chart
+  const rentData = data?.reduce((acc: any, tenant) => {
+    const month = new Date(tenant.lease_start_date).toLocaleString('default', { month: 'short' });
+    if (!acc[month]) {
+      acc[month] = { month, rent: 0 };
+    }
+    acc[month].rent += tenant.rent_amount;
+    return acc;
+  }, {});
 
-  const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return [];
-
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('owner_id', session.user.id)
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const rentData = properties.map((property, index) => {
-    const cumulativeRent = properties
-      .slice(0, index + 1)
-      .reduce((sum, p) => sum + (p.rent_amount || 0), 0);
-    
-    return {
-      name: new Date(property.created_at).toLocaleDateString(),
-      rent: cumulativeRent,
-    };
-  });
-
-  const chartConfig = {
-    rent: {
-      label: "Monthly Rent",
-      theme: {
-        light: "#2563eb",
-        dark: "#3b82f6",
-      },
-    },
-  };
+  const chartData = rentData ? Object.values(rentData) : [];
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Rent Trends</CardTitle>
-        <CardDescription>Monthly rent collection overview</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full p-4">
+        <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={rentData}
-              margin={{
-                top: 5,
-                right: 10,
-                left: 0,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="name"
-                tickMargin={10}
-                padding={{ left: 10, right: 10 }}
+            <LineChart data={chartData}>
+              <XAxis 
+                dataKey="month" 
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
               />
               <YAxis
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
                 tickFormatter={(value) => `$${value}`}
-                tickMargin={10}
               />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <Tooltip
                 formatter={(value) => [`$${value}`, "Amount"]}
                 labelFormatter={(label) => `Month: ${label}`}
