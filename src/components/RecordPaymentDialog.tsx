@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Tables } from "@/integrations/supabase/types";
 
 type PaymentFormData = {
   amount: number;
@@ -19,17 +20,13 @@ type PaymentFormData = {
   rent_period_end?: string;
 }
 
-interface Property {
-  id: string;
-  address: string;
-}
-
-interface Tenant {
+type Property = Pick<Tables<"properties">, "id" | "address">;
+type Tenant = {
   id: string;
   profile: {
     full_name: string | null;
   };
-}
+};
 
 export function RecordPaymentDialog() {
   const { toast } = useToast();
@@ -44,7 +41,7 @@ export function RecordPaymentDialog() {
         .select('id, address');
       
       if (error) throw error;
-      return (data || []) as Property[];
+      return data as Property[];
     }
   });
 
@@ -59,7 +56,7 @@ export function RecordPaymentDialog() {
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
-      return (data || []) as Tenant[];
+      return data as Tenant[];
     },
     enabled: !!form.watch('property_id')
   });
