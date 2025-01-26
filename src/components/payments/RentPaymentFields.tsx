@@ -10,18 +10,17 @@ interface RentPaymentFieldsProps {
   form: UseFormReturn<PaymentFormData>;
 }
 
-// Separate interfaces to avoid deep type recursion
-interface Property {
+type Property = {
   id: string;
   address: string;
-}
+};
 
-interface Tenant {
+type Tenant = {
   id: string;
   profile: {
     full_name: string | null;
   } | null;
-}
+};
 
 export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
   const { data: properties = [] } = useQuery({
