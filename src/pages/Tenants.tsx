@@ -2,10 +2,17 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Users, Mail, Calendar } from "lucide-react";
+import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Tenant {
   id: string;
@@ -22,9 +29,8 @@ interface Tenant {
 
 const Tenants = () => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: tenants = [], isError } = useQuery({
+  const { data: tenants = [], isError, refetch, isLoading } = useQuery({
     queryKey: ['tenants'],
     queryFn: async () => {
       const { data: session } = await supabase.auth.getSession();
@@ -55,7 +61,20 @@ const Tenants = () => {
 
       return data as Tenant[];
     },
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    staleTime: 30000,
   });
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -72,36 +91,34 @@ const Tenants = () => {
           <p className="text-red-600">Failed to load tenants. Please try again later.</p>
         </div>
       ) : tenants.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="text-center py-8 space-y-4">
+          <Users className="w-12 h-12 text-gray-400 mx-auto" />
           <p className="text-gray-600">No tenants found. Add your first tenant to get started.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tenants.map((tenant) => (
-            <Card key={tenant.id} className="p-6">
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="bg-primary-50 rounded-full p-3">
-                  <Users className="w-6 h-6 text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{tenant.profile.full_name}</h3>
-                  <p className="text-sm text-gray-500">{tenant.property.address}</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Property Address</TableHead>
+                <TableHead>Lease Period</TableHead>
+                <TableHead className="text-right">Rent Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tenants.map((tenant) => (
+                <TableRow key={tenant.id}>
+                  <TableCell className="font-medium">{tenant.profile.full_name}</TableCell>
+                  <TableCell>{tenant.property.address}</TableCell>
+                  <TableCell>
                     {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <span>${tenant.rent_amount}/month</span>
-                </div>
-              </div>
-            </Card>
-          ))}
+                  </TableCell>
+                  <TableCell className="text-right">${tenant.rent_amount}/month</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </DashboardLayout>

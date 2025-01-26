@@ -115,17 +115,23 @@ const Index = () => {
   const { data: properties = [], isError } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No authenticated session');
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('No authenticated session');
+        }
 
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('owner_id', session.user.id);
-      
-      if (error) {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('owner_id', session.user.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        return data as Property[];
+      } catch (error: any) {
         toast({
           title: "Error fetching properties",
           description: error.message,
@@ -133,9 +139,10 @@ const Index = () => {
         });
         throw error;
       }
-      
-      return data as Property[];
     },
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    staleTime: 30000,
   });
 
   if (isLoading) {
@@ -148,7 +155,7 @@ const Index = () => {
     );
   }
 
-  const getStatusColor = (status: Property['status']) => {
+  const getStatusColor = (status: Property['status'] | undefined) => {
     switch (status) {
       case 'occupied':
         return 'bg-green-100 text-green-800';
@@ -248,7 +255,11 @@ const Index = () => {
                   <TableCell>{property.zip_code}</TableCell>
                   <TableCell>
                     <span className={`inline-block px-2 py-1 rounded-full text-sm ${getStatusColor(property.status)}`}>
-                      {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
+                      {property.status ? (
+                        property.status.charAt(0).toUpperCase() + property.status.slice(1)
+                      ) : (
+                        'Unknown'
+                      )}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">{property.rent_amount}K/month</TableCell>
