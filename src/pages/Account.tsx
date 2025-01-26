@@ -7,11 +7,38 @@ import { CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileDetails } from "@/components/account/ProfileDetails";
 import { SubscriptionDetails } from "@/components/account/SubscriptionDetails";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 
 const Account = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get('session_id');
+
+  // Check for successful checkout
+  useEffect(() => {
+    if (sessionId) {
+      toast({
+        title: "Processing Subscription",
+        description: "Please wait while we update your subscription...",
+        variant: "default",
+      });
+
+      // After 3 seconds, show the success message
+      const timer = setTimeout(() => {
+        toast({
+          title: "Subscription Updated",
+          description: "Your subscription has been successfully updated.",
+          variant: "default",
+        });
+        // Remove the session_id from the URL
+        navigate('/account', { replace: true });
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [sessionId, navigate, toast]);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -52,6 +79,9 @@ const Account = () => {
       return subscription;
     },
     enabled: !!profile?.id,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: sessionId ? 1000 : false, // Poll every second if we have a session_id
   });
 
   const handleUpgradeClick = async () => {

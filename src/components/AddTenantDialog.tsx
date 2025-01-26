@@ -22,6 +22,14 @@ const formSchema = z.object({
   rent_amount: z.string().min(1, "Rent amount is required"),
 });
 
+function generateRandomPassword(): string {
+  const length = 12;
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  return Array.from(crypto.getRandomValues(new Uint8Array(length)))
+    .map(x => charset[x % charset.length])
+    .join('');
+}
+
 export function AddTenantDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
