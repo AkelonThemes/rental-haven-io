@@ -56,25 +56,32 @@ export function AddTenantDialog() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) throw new Error('Not authenticated');
 
-      // First create a tenant profile
-      const { data: profileData, error: profileError } = await supabase
+      // First check if a profile already exists
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .insert({
-          id: session.session.user.id,
-          full_name: values.full_name,
-          role: 'tenant'
-        })
-        .select()
+        .select('id')
+        .eq('id', session.session.user.id)
         .single();
 
-      if (profileError) throw profileError;
+      // Only create profile if it doesn't exist
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.session.user.id,
+            full_name: values.full_name,
+            role: 'tenant'
+          });
 
-      // Then create the tenant record
+        if (profileError) throw profileError;
+      }
+
+      // Create the tenant record
       const { error: tenantError } = await supabase
         .from('tenants')
         .insert({
           property_id: values.property_id,
-          profile_id: profileData.id,
+          profile_id: session.session.user.id,
           lease_start_date: values.lease_start_date,
           lease_end_date: values.lease_end_date,
           rent_amount: parseFloat(values.rent_amount),
