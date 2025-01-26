@@ -4,16 +4,35 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PaymentFormData, Property, Tenant } from "./types";
+import { PaymentFormData } from "./types";
 
 interface RentPaymentFieldsProps {
   form: UseFormReturn<PaymentFormData>;
+}
+
+// Separate interfaces to avoid deep type recursion
+interface Property {
+  id: string;
+  address: string;
+}
+
+interface Tenant {
+  id: string;
+  profile: {
+    full_name: string | null;
+  } | null;
 }
 
 export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session) {
+        window.location.href = '/auth';
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('properties')
         .select('id, address');
@@ -28,6 +47,12 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
     queryFn: async () => {
       if (!form.watch('property_id')) return [];
       
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session) {
+        window.location.href = '/auth';
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('tenants')
         .select('id, profile:profiles(full_name)')
@@ -88,7 +113,7 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
                 <SelectContent>
                   {tenants.map((tenant) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.profile.full_name}
+                      {tenant.profile?.full_name || 'N/A'}
                     </SelectItem>
                   ))}
                 </SelectContent>

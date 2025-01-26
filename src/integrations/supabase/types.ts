@@ -264,6 +264,7 @@ export type Database = {
       tenants: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
           lease_end_date: string
           lease_start_date: string
@@ -274,6 +275,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
           lease_end_date: string
           lease_start_date: string
@@ -284,6 +286,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
           lease_end_date?: string
           lease_start_date?: string
