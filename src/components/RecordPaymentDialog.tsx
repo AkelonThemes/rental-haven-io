@@ -44,8 +44,8 @@ export function RecordPaymentDialog() {
         .select('id, address');
       
       if (error) throw error;
-      return data as Property[];
-    },
+      return (data || []) as Property[];
+    }
   });
 
   const { data: tenants = [] } = useQuery({
@@ -59,9 +59,9 @@ export function RecordPaymentDialog() {
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
-      return data as Tenant[];
+      return (data || []) as Tenant[];
     },
-    enabled: !!form.watch('property_id'),
+    enabled: !!form.watch('property_id')
   });
 
   const onSubmit = async (data: PaymentFormData) => {
