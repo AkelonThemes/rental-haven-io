@@ -25,7 +25,7 @@ async function testEnvironmentVariables() {
     if (!stripeKey) throw new Error("Stripe key is missing");
     
     const stripe = new Stripe(stripeKey, {
-      apiVersion: "2023-10-16",
+      apiVersion: "2024-12-18.acacia",
     });
     const balance = await stripe.balance.retrieve();
     console.log("- Stripe Connection: ✅ Success");
