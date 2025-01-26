@@ -10,7 +10,7 @@ import { DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface PaymentFormData {
+type PaymentFormData = {
   amount: number;
   payment_type: 'rent' | 'subscription';
   property_id?: string;
@@ -19,12 +19,12 @@ interface PaymentFormData {
   rent_period_end?: string;
 }
 
-type SimpleProperty = {
+type Property = {
   id: string;
   address: string;
 }
 
-type SimpleTenant = {
+type Tenant = {
   id: string;
   profile: {
     full_name: string | null;
@@ -44,7 +44,7 @@ export function RecordPaymentDialog() {
         .select('id, address');
       
       if (error) throw error;
-      return data as SimpleProperty[];
+      return data as Property[];
     },
   });
 
@@ -59,7 +59,7 @@ export function RecordPaymentDialog() {
         .eq('property_id', form.watch('property_id'));
       
       if (error) throw error;
-      return data as SimpleTenant[];
+      return data as Tenant[];
     },
     enabled: !!form.watch('property_id'),
   });
