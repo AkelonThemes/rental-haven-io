@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, FileText, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { Building2, Users, FileText, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRole } from "@/hooks/use-role";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,8 +18,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
+  const { role } = useRole();
   
-  const menuItems = [
+  const landlordMenuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
     { icon: <Building2 className="w-5 h-5" />, label: "Properties", href: "/properties" },
     { icon: <Users className="w-5 h-5" />, label: "Tenants", href: "/tenants" },
@@ -26,6 +28,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
     { icon: <UserCircle className="w-5 h-5" />, label: "Account", href: "/account" },
   ];
+
+  const tenantMenuItems = [
+    { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
+    { icon: <Wrench className="w-5 h-5" />, label: "Maintenance", href: "/maintenance" },
+    { icon: <FileText className="w-5 h-5" />, label: "Payments", href: "/payments" },
+    { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
+    { icon: <UserCircle className="w-5 h-5" />, label: "Account", href: "/account" },
+  ];
+
+  const menuItems = role === 'tenant' ? tenantMenuItems : landlordMenuItems;
 
   const handleSignOut = async () => {
     try {
