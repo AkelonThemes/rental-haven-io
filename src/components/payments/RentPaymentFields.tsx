@@ -4,15 +4,23 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PaymentFormData, Property, TenantProfile } from "./types";
+import { PaymentFormData } from "./types";
 
 interface RentPaymentFieldsProps {
   form: UseFormReturn<PaymentFormData>;
 }
 
+// Simplified type definitions to prevent recursion
+interface Property {
+  id: string;
+  address: string;
+}
+
 interface Tenant {
   id: string;
-  profile: TenantProfile | null;
+  profile: {
+    full_name: string | null;
+  } | null;
 }
 
 export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
