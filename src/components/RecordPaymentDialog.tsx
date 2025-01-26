@@ -19,12 +19,12 @@ type PaymentFormData = {
   rent_period_end?: string;
 }
 
-type Property = {
+interface Property {
   id: string;
   address: string;
 }
 
-type Tenant = {
+interface Tenant {
   id: string;
   profile: {
     full_name: string | null;

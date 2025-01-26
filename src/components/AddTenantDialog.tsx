@@ -53,16 +53,16 @@ export function AddTenantDialog() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // First create a profile for the tenant
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) throw new Error('Not authenticated');
 
+      // First create a tenant profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert({
+          id: crypto.randomUUID(),
           full_name: values.full_name,
-          role: 'tenant',
-          id: crypto.randomUUID(), // Generate a unique ID for the profile
+          role: 'tenant'
         })
         .select()
         .single();
