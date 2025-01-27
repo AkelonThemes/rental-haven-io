@@ -1,21 +1,21 @@
+// @ts-ignore: Deno imports
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from 'https://esm.sh/stripe@14.21.0';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// @ts-ignore: Deno imports
+import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&no-check";
+// @ts-ignore: Deno imports
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target=deno&no-check";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get the stripe signature from headers
     const signature = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
@@ -51,7 +51,6 @@ serve(async (req) => {
       apiVersion: '2024-12-18.acacia',
     });
 
-    // Get the raw body
     const body = await req.text();
     
     console.log('Received webhook request', {
@@ -60,7 +59,6 @@ serve(async (req) => {
       webhook_secret_exists: !!webhookSecret
     });
 
-    // Verify the webhook signature using constructEventAsync
     let event;
     try {
       event = await stripe.webhooks.constructEventAsync(
@@ -99,6 +97,9 @@ serve(async (req) => {
           user_id: userId
         });
 
+        // Get the plan type from the subscription items
+        const planType = subscription.items.data[0]?.price?.nickname || 'pro';
+
         // Update subscription in database
         const { error: updateError } = await supabaseClient
           .from('subscriptions')
@@ -106,7 +107,7 @@ serve(async (req) => {
             profile_id: userId,
             stripe_subscription_id: subscription.id,
             stripe_customer_id: customerId,
-            plan_type: 'pro',
+            plan_type: planType,
             status: subscription.status,
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
@@ -146,6 +147,9 @@ serve(async (req) => {
           status: subscription.status
         });
 
+        // Get the plan type from the subscription items or use the existing one
+        const planType = subscription.items?.data[0]?.price?.nickname || 'pro';
+
         const { error } = await supabaseClient
           .from('subscriptions')
           .upsert({
@@ -153,6 +157,7 @@ serve(async (req) => {
             stripe_subscription_id: subscription.id,
             stripe_customer_id: subscription.customer as string,
             status: subscription.status,
+            plan_type: planType, // Include plan_type in the update
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           });
