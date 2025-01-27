@@ -40,7 +40,7 @@ const Account = () => {
     }
   }, [sessionId, navigate, toast]);
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -60,8 +60,10 @@ const Account = () => {
   });
 
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
-    queryKey: ["subscription"],
+    queryKey: ["subscription", sessionId], // Add sessionId to queryKey to trigger refetch
     queryFn: async () => {
+      if (!profile?.id) return null;
+
       const { data: subscription } = await supabase
         .from("subscriptions")
         .select(`
@@ -73,15 +75,15 @@ const Account = () => {
             stripe_payment_id
           )
         `)
-        .eq("profile_id", profile?.id)
+        .eq("profile_id", profile.id)
         .maybeSingle();
       
       return subscription;
     },
     enabled: !!profile?.id,
+    refetchInterval: sessionId ? 1000 : false, // Poll every second if we have a session_id
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    refetchInterval: sessionId ? 1000 : false, // Poll every second if we have a session_id
   });
 
   const handleUpgradeClick = async () => {
@@ -138,7 +140,7 @@ const Account = () => {
           <ProfileDetails profile={profile} />
           <SubscriptionDetails
             subscription={subscription}
-            isLoading={isLoadingSubscription}
+            isLoading={isLoadingSubscription || isLoadingProfile}
             onUpgradeClick={handleUpgradeClick}
           />
 
