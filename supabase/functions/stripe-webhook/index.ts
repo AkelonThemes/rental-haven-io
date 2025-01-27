@@ -48,7 +48,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2024-12-18.acacia',
     });
 
     // Get the raw body
@@ -60,10 +60,10 @@ serve(async (req) => {
       webhook_secret_exists: !!webhookSecret
     });
 
-    // Verify the webhook signature
+    // Verify the webhook signature using constructEventAsync
     let event;
     try {
-      event = stripe.webhooks.constructEvent(
+      event = await stripe.webhooks.constructEventAsync(
         body,
         signature,
         webhookSecret

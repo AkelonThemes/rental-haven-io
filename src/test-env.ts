@@ -33,18 +33,23 @@ async function testEnvironmentVariables() {
     console.log("- Stripe Connection: ✅ Success");
 
     // Test webhook signature verification
-    const testPayload = JSON.stringify({ type: 'test_event' });
-    const testTimestamp = Math.floor(Date.now() / 1000);
-    
     if (webhookSecret) {
       try {
+        const testPayload = JSON.stringify({ type: 'test_event' });
+        const testTimestamp = Math.floor(Date.now() / 1000);
+        
         const signature = stripe.webhooks.generateTestHeaderString({
           payload: testPayload,
           secret: webhookSecret,
           timestamp: testTimestamp,
         });
         
-        stripe.webhooks.constructEvent(testPayload, signature, webhookSecret);
+        // Use constructEventAsync instead of constructEvent
+        await stripe.webhooks.constructEventAsync(
+          testPayload,
+          signature,
+          webhookSecret
+        );
         console.log("- Webhook Secret Verification: ✅ Success");
       } catch (error: any) {
         console.log("- Webhook Secret Verification: ❌ Failed");
