@@ -20,15 +20,37 @@ async function testEnvironmentVariables() {
   console.log("- Secret Key:", stripeKey ? "✅ Present" : "❌ Missing");
   console.log("- Webhook Secret:", webhookSecret ? "✅ Present" : "❌ Missing");
 
-  // Test Stripe connection
+  // Test Stripe connection and webhook
   try {
     if (!stripeKey) throw new Error("Stripe key is missing");
     
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2024-12-18.acacia",
     });
+
+    // Test basic Stripe connection
     const balance = await stripe.balance.retrieve();
     console.log("- Stripe Connection: ✅ Success");
+
+    // Test webhook signature verification
+    const testPayload = JSON.stringify({ type: 'test_event' });
+    const testTimestamp = Math.floor(Date.now() / 1000);
+    
+    if (webhookSecret) {
+      try {
+        const signature = stripe.webhooks.generateTestHeaderString({
+          payload: testPayload,
+          secret: webhookSecret,
+          timestamp: testTimestamp,
+        });
+        
+        stripe.webhooks.constructEvent(testPayload, signature, webhookSecret);
+        console.log("- Webhook Secret Verification: ✅ Success");
+      } catch (error: any) {
+        console.log("- Webhook Secret Verification: ❌ Failed");
+        console.error("  Error:", error.message);
+      }
+    }
   } catch (error: any) {
     console.log("- Stripe Connection: ❌ Failed");
     console.error("  Error:", error.message);
