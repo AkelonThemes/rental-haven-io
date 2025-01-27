@@ -87,15 +87,22 @@ export const SubscriptionDetails = ({
     }
   };
 
-  return (
-    <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Subscription</h2>
-      {isLoading ? (
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4">Subscription</h2>
         <div className="space-y-4">
           <Skeleton className="h-4 w-[250px]" />
           <Skeleton className="h-4 w-[200px]" />
         </div>
-      ) : subscription ? (
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-6">
+      <h2 className="text-lg font-semibold mb-4">Subscription</h2>
+      {subscription ? (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-primary" />
