@@ -8,6 +8,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SubscriptionDetailsProps {
   subscription: Tables<"subscriptions"> | null;
@@ -22,6 +23,7 @@ export const SubscriptionDetails = ({
 }: SubscriptionDetailsProps) => {
   const [isCancelling, setIsCancelling] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -59,18 +61,21 @@ export const SubscriptionDetails = ({
 
     try {
       setIsCancelling(true);
-      const { error } = await supabase.functions.invoke('cancel-subscription', {
+      const response = await supabase.functions.invoke('cancel-subscription', {
         method: 'POST',
         body: { subscriptionId: subscription.stripe_subscription_id }
       });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
+
+      // Invalidate and refetch subscription data
+      await queryClient.invalidateQueries({ queryKey: ['subscription'] });
 
       toast({
         title: "Success",
         description: "Your subscription has been cancelled",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cancelling subscription:', error);
       toast({
         title: "Error",
@@ -104,7 +109,7 @@ export const SubscriptionDetails = ({
               </Badge>
             </div>
           </div>
-          {subscription.current_period_end && (
+          {subscription.current_period_end && subscription.status === 'active' && (
             <div className="text-sm text-muted-foreground">
               Next billing date:{" "}
               {format(new Date(subscription.current_period_end), "PPP")}
