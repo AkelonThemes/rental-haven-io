@@ -5,6 +5,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Package, ArrowRight, Check, X, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionDetailsProps {
   subscription: Tables<"subscriptions"> | null;
@@ -17,6 +20,9 @@ export const SubscriptionDetails = ({
   isLoading,
   onUpgradeClick,
 }: SubscriptionDetailsProps) => {
+  const [isCancelling, setIsCancelling] = useState(false);
+  const { toast } = useToast();
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "active":
@@ -38,6 +44,41 @@ export const SubscriptionDetails = ({
         return "destructive";
       default:
         return "outline";
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!subscription?.stripe_subscription_id) {
+      toast({
+        title: "Error",
+        description: "No active subscription found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsCancelling(true);
+      const { error } = await supabase.functions.invoke('cancel-subscription', {
+        method: 'POST',
+        body: { subscriptionId: subscription.stripe_subscription_id }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your subscription has been cancelled",
+      });
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel subscription. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -70,9 +111,18 @@ export const SubscriptionDetails = ({
             </div>
           )}
           {subscription.status === "active" && (
-            <div className="text-sm text-muted-foreground">
-              Subscription ID: {subscription.stripe_subscription_id}
-            </div>
+            <>
+              <div className="text-sm text-muted-foreground">
+                Subscription ID: {subscription.stripe_subscription_id}
+              </div>
+              <Button 
+                variant="destructive" 
+                onClick={handleCancelSubscription}
+                disabled={isCancelling}
+              >
+                {isCancelling ? "Cancelling..." : "Cancel Subscription"}
+              </Button>
+            </>
           )}
           {subscription.status !== "active" && (
             <Button onClick={onUpgradeClick} className="mt-4">
