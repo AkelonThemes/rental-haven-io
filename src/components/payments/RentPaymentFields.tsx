@@ -41,10 +41,12 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
     }
   });
 
+  const propertyId = form.watch('property_id');
+  
   const { data: tenants = [] } = useQuery<Tenant[]>({
-    queryKey: ['tenants', form.watch('property_id')],
+    queryKey: ['tenants', propertyId],
     queryFn: async () => {
-      if (!form.watch('property_id')) return [];
+      if (!propertyId) return [];
       
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session) {
@@ -55,12 +57,12 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
       const { data, error } = await supabase
         .from('tenants')
         .select('id, profile:profiles(full_name)')
-        .eq('property_id', form.watch('property_id'));
+        .eq('property_id', propertyId);
       
       if (error) throw error;
       return data;
     },
-    enabled: !!form.watch('property_id')
+    enabled: !!propertyId
   });
 
   return (
@@ -93,7 +95,7 @@ export function RentPaymentFields({ form }: RentPaymentFieldsProps) {
         )}
       />
 
-      {form.watch('property_id') && (
+      {propertyId && (
         <FormField
           control={form.control}
           name="tenant_id"
