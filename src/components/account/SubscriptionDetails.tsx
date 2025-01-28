@@ -70,25 +70,11 @@ export const SubscriptionDetails = ({
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Subscription</h2>
       {subscription ? (
-        subscription.status !== "active" ? (
-          <div className="space-y-4">
-            <ActiveSubscription 
-              subscription={subscription} 
-              onCancelClick={handleCancelSubscription}
-              isCancelling={isCancelling}
-            />
-            <Button onClick={onUpgradeClick} className="mt-4">
-              Upgrade Plan
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <ActiveSubscription 
-            subscription={subscription} 
-            onCancelClick={handleCancelSubscription}
-            isCancelling={isCancelling}
-          />
-        )
+        <ActiveSubscription 
+          subscription={subscription} 
+          onCancelClick={handleCancelSubscription}
+          isCancelling={isCancelling}
+        />
       ) : (
         <NoSubscription onUpgradeClick={onUpgradeClick} />
       )}
