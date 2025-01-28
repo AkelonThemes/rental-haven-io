@@ -17,14 +17,15 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
+    // Clear any existing sessions on mount
+    const clearSession = async () => {
+      await supabase.auth.signOut();
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate("/");
       }
     };
-    checkAuth();
+    clearSession();
   }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -47,23 +48,30 @@ const Auth = () => {
 
         if (error) throw error;
 
-        // If sign up is successful, user will be automatically signed in
         if (data.session) {
           navigate("/");
+        } else {
+          toast({
+            title: "Check your email",
+            description: "We sent you a confirmation link to complete your registration.",
+          });
         }
 
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
-        navigate("/");
+
+        if (data.session) {
+          navigate("/");
+        }
       }
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: "Authentication Error",
         description: error.message,
         variant: "destructive",
       });
