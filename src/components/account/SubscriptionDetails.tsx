@@ -79,6 +79,7 @@ export const SubscriptionDetails = ({
         return;
       }
 
+      // Immediately invalidate the subscription query to refresh the data
       await queryClient.invalidateQueries({ queryKey: ['subscription'] });
 
       toast({
@@ -104,7 +105,7 @@ export const SubscriptionDetails = ({
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Subscription</h2>
-      {subscription ? (
+      {subscription && subscription.status !== 'canceled' ? (
         <ActiveSubscription 
           subscription={subscription} 
           onCancelClick={handleCancelSubscription}
