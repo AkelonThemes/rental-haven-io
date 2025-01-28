@@ -8,7 +8,6 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Tenants from "./pages/Tenants";
 import Notifications from "./pages/Notifications";
-import Payments from "./pages/Payments";
 import Account from "./pages/Account";
 import Dashboard from "./pages/Dashboard";
 import TenantDashboard from "./pages/TenantDashboard";
@@ -147,10 +146,6 @@ const App = () => {
             <Route
               path="/notifications"
               element={session ? <Notifications /> : <Navigate to="/landing" />}
-            />
-            <Route
-              path="/payments"
-              element={session ? <Payments /> : <Navigate to="/landing" />}
             />
             <Route
               path="/account"
