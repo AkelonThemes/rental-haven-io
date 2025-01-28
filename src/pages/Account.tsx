@@ -9,6 +9,7 @@ import { ProfileDetails } from "@/components/account/ProfileDetails";
 import { SubscriptionDetails } from "@/components/account/SubscriptionDetails";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
+import { PaymentList } from "@/components/payments/PaymentList";
 
 const Account = () => {
   const { toast } = useToast();
@@ -16,7 +17,6 @@ const Account = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
 
-  // Check for successful checkout
   useEffect(() => {
     if (sessionId) {
       toast({
@@ -137,6 +137,31 @@ const Account = () => {
     }
   };
 
+  // Add payment history query
+  const { data: payments, isLoading: isLoadingPayments } = useQuery({
+    queryKey: ['payments'],
+    queryFn: async () => {
+      if (!profile?.id) return null;
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          property:properties(*)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5); // Only show the 5 most recent payments
+
+      if (error) {
+        console.error('Error fetching payments:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!profile?.id,
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -158,9 +183,14 @@ const Account = () => {
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Payment History</h2>
             <div className="space-y-4">
+              <PaymentList 
+                payments={payments} 
+                isLoading={isLoadingPayments} 
+              />
               <Button
                 variant="outline"
-                onClick={() => window.location.href = "/payments"}
+                onClick={() => navigate("/payments")}
+                className="mt-4"
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 View All Payments
