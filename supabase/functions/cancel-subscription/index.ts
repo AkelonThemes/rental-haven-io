@@ -34,13 +34,25 @@ serve(async (req) => {
 
     if (authError || !user) {
       console.error('Auth error:', authError);
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // Get request body
     const { subscriptionId } = await req.json();
     if (!subscriptionId) {
-      throw new Error('Subscription ID is required');
+      return new Response(
+        JSON.stringify({ error: 'Subscription ID is required' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     console.log('Attempting to cancel subscription:', subscriptionId, 'for user:', user.id);
@@ -50,22 +62,39 @@ serve(async (req) => {
       apiVersion: '2025-01-27.acacia',
     });
 
+    // First verify the subscription exists and belongs to the user
+    const { data: subscription, error: dbError } = await supabaseClient
+      .from('subscriptions')
+      .select('*')
+      .eq('stripe_subscription_id', subscriptionId)
+      .eq('profile_id', user.id)
+      .maybeSingle();
+
+    if (dbError) {
+      console.error('Database error:', dbError);
+      return new Response(
+        JSON.stringify({ error: 'Database error occurred' }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    if (!subscription) {
+      console.error('Subscription not found for user:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Subscription not found for this user' }),
+        { 
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Found subscription in database:', subscription);
+
     try {
-      // First verify the subscription exists and belongs to the user
-      const { data: subscription, error: dbError } = await supabaseClient
-        .from('subscriptions')
-        .select('*')
-        .eq('stripe_subscription_id', subscriptionId)
-        .eq('profile_id', user.id)
-        .single();
-
-      if (dbError || !subscription) {
-        console.error('Subscription not found in database:', dbError);
-        throw new Error('Subscription not found in database');
-      }
-
-      console.log('Found subscription in database:', subscription);
-
       // Cancel the subscription in Stripe
       const canceledSubscription = await stripe.subscriptions.cancel(subscriptionId);
       console.log('Stripe subscription canceled:', canceledSubscription.id);
@@ -82,7 +111,13 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('Error updating subscription in database:', updateError);
-        throw updateError;
+        return new Response(
+          JSON.stringify({ error: 'Failed to update subscription status' }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
 
       return new Response(
@@ -111,7 +146,13 @@ serve(async (req) => {
 
         if (updateError) {
           console.error('Error updating subscription in database:', updateError);
-          throw updateError;
+          return new Response(
+            JSON.stringify({ error: 'Failed to update subscription status' }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
         }
 
         return new Response(
@@ -125,7 +166,14 @@ serve(async (req) => {
           }
         );
       }
-      throw stripeError;
+
+      return new Response(
+        JSON.stringify({ error: stripeError.message }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
   } catch (error) {
     console.error('Error:', error);

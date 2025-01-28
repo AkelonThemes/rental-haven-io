@@ -59,7 +59,25 @@ export const SubscriptionDetails = ({
         body: { subscriptionId: subscription.stripe_subscription_id }
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Error cancelling subscription:', response.error);
+        let errorMessage = 'Failed to cancel subscription. Please try again.';
+        
+        // Check if the error response contains a more specific message
+        if (response.error.message && typeof response.error.message === 'string') {
+          const errorData = JSON.parse(response.error.message);
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
 
       await queryClient.invalidateQueries({ queryKey: ['subscription'] });
 
