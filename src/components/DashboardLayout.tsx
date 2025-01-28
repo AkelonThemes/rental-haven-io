@@ -45,12 +45,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Clear any cached data
+      localStorage.clear();
+      
+      // Navigate to landing page
       navigate("/landing");
+      
       toast({
         title: "Signed out successfully",
         description: "You have been logged out of your account.",
       });
     } catch (error: any) {
+      console.error("Sign out error:", error);
       toast({
         title: "Error signing out",
         description: error.message,

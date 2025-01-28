@@ -32,23 +32,18 @@ const App = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up initial session
     const initSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-          toast({
-            title: "Session Error",
-            description: "Please sign in again to continue.",
-            variant: "destructive",
-          });
-          await handleSignOut();
-          return;
-        }
+        if (error) throw error;
         setSession(session);
-      } catch (error) {
-        console.error("Error initializing session:", error);
+      } catch (error: any) {
+        console.error("Error getting session:", error);
+        toast({
+          title: "Session Error",
+          description: error.message,
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -56,38 +51,19 @@ const App = () => {
 
     initSession();
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!session) {
-        setSession(null);
-        queryClient.clear(); // Clear any cached data
-        toast({
-          title: "Session Expired",
-          description: "Please sign in again to continue.",
-        });
-        return;
-      }
-
-      // Update session state
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (!session) {
+        queryClient.clear();
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, [toast]);
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setSession(null);
-      queryClient.clear();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
 
   // Show loading state
   if (loading || roleLoading) {
@@ -134,38 +110,20 @@ const App = () => {
             {/* Protected routes - Landlord only */}
             {role === 'landlord' && (
               <>
-                <Route
-                  path="/dashboard"
-                  element={session ? <Dashboard /> : <Navigate to="/landing" />}
-                />
-                <Route
-                  path="/properties"
-                  element={session ? <Index /> : <Navigate to="/landing" />}
-                />
-                <Route
-                  path="/tenants"
-                  element={session ? <Tenants /> : <Navigate to="/landing" />}
-                />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/properties" element={<Index />} />
+                <Route path="/tenants" element={<Tenants />} />
               </>
             )}
 
             {/* Protected routes - Tenant only */}
             {role === 'tenant' && (
-              <Route
-                path="/dashboard"
-                element={session ? <TenantDashboard /> : <Navigate to="/landing" />}
-              />
+              <Route path="/dashboard" element={<TenantDashboard />} />
             )}
 
             {/* Shared protected routes */}
-            <Route
-              path="/notifications"
-              element={session ? <Notifications /> : <Navigate to="/landing" />}
-            />
-            <Route
-              path="/account"
-              element={session ? <Account /> : <Navigate to="/landing" />}
-            />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/account" element={<Account />} />
 
             {/* Redirect root to dashboard when authenticated */}
             <Route
