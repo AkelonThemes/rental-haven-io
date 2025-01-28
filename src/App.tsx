@@ -16,7 +16,14 @@ import { supabase } from "./integrations/supabase/client";
 import { useRole } from "./hooks/use-role";
 import { useToast } from "./hooks/use-toast";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => {
   const [session, setSession] = useState<any>(null);
@@ -26,20 +33,28 @@ const App = () => {
 
   useEffect(() => {
     // Set up initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error("Error getting session:", error);
-        toast({
-          title: "Session Error",
-          description: "Please sign in again to continue.",
-          variant: "destructive",
-        });
-        handleSignOut();
-        return;
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting session:", error);
+          toast({
+            title: "Session Error",
+            description: "Please sign in again to continue.",
+            variant: "destructive",
+          });
+          await handleSignOut();
+          return;
+        }
+        setSession(session);
+      } catch (error) {
+        console.error("Error initializing session:", error);
+      } finally {
+        setLoading(false);
       }
-      setSession(session);
-      setLoading(false);
-    });
+    };
+
+    initSession();
 
     // Listen for auth changes
     const {
@@ -62,7 +77,7 @@ const App = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [queryClient, toast]);
+  }, [toast]);
 
   const handleSignOut = async () => {
     try {
