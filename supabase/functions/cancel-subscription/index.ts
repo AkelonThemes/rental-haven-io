@@ -7,11 +7,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -34,6 +33,7 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       throw new Error('Unauthorized');
     }
 
@@ -43,11 +43,11 @@ serve(async (req) => {
       throw new Error('Subscription ID is required');
     }
 
-    console.log('Attempting to cancel subscription:', subscriptionId);
+    console.log('Attempting to cancel subscription:', subscriptionId, 'for user:', user.id);
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2025-01-27.acacia',
     });
 
     try {
@@ -61,8 +61,10 @@ serve(async (req) => {
 
       if (dbError || !subscription) {
         console.error('Subscription not found in database:', dbError);
-        throw new Error('Subscription not found');
+        throw new Error('Subscription not found in database');
       }
+
+      console.log('Found subscription in database:', subscription);
 
       // Cancel the subscription in Stripe
       const canceledSubscription = await stripe.subscriptions.cancel(subscriptionId);
@@ -93,11 +95,14 @@ serve(async (req) => {
           status: 200,
         }
       );
-    } catch (stripeError) {
+    } catch (stripeError: any) {
       console.error('Stripe error:', stripeError);
+      
       // If the subscription doesn't exist in Stripe but exists in our DB,
       // we should still mark it as canceled
       if (stripeError.code === 'resource_missing') {
+        console.log('Subscription not found in Stripe, updating database status only');
+        
         const { error: updateError } = await supabaseClient
           .from('subscriptions')
           .update({ status: 'canceled' })
