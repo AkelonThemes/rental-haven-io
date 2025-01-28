@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tables } from "@/integrations/supabase/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,6 +24,23 @@ export const SubscriptionDetails = ({
   const [isCancelling, setIsCancelling] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Check session on mount and refresh if needed
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        toast({
+          title: "Session Error",
+          description: "Please sign in again to continue.",
+          variant: "destructive",
+        });
+        await supabase.auth.signOut();
+        return;
+      }
+    };
+    checkSession();
+  }, [toast]);
 
   const handleCancelSubscription = async () => {
     if (!subscription?.stripe_subscription_id) {

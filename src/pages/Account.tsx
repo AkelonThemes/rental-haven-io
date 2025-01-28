@@ -25,7 +25,7 @@ const Account = () => {
         variant: "default",
       });
 
-      // After 3 seconds, show the success message
+      // After 3 seconds, show the success message and refetch data
       const timer = setTimeout(() => {
         toast({
           title: "Subscription Updated",
@@ -40,43 +40,50 @@ const Account = () => {
     }
   }, [sessionId, navigate, toast]);
 
+  // Fetch profile data
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('Session error:', sessionError);
         navigate("/auth");
         return null;
       }
-      
-      const { data: profile } = await supabase
+
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", session.user.id)
         .single();
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw profileError;
+      }
       
       return profile;
     },
+    retry: false,
   });
 
+  // Fetch subscription data with automatic refetching
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
-    queryKey: ["subscription", sessionId], // Add sessionId to queryKey to trigger refetch
+    queryKey: ["subscription", sessionId], // Add sessionId to trigger refetch
     queryFn: async () => {
       if (!profile?.id) return null;
 
-      const { data: subscription } = await supabase
+      const { data: subscription, error } = await supabase
         .from("subscriptions")
-        .select(`
-          *,
-          payments (
-            amount,
-            status,
-            payment_date,
-            stripe_payment_id
-          )
-        `)
+        .select("*")
         .eq("profile_id", profile.id)
         .maybeSingle();
+
+      if (error) {
+        console.error('Subscription error:', error);
+        throw error;
+      }
       
       return subscription;
     },
