@@ -7,10 +7,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,6 +22,7 @@ serve(async (req) => {
       throw new Error('Stripe key not configured');
     }
 
+    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -59,7 +61,7 @@ serve(async (req) => {
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, {
-      apiVersion: '2025-01-27.acacia',
+      apiVersion: '2023-10-16',
     });
 
     // First verify the subscription exists and belongs to the user
@@ -82,9 +84,9 @@ serve(async (req) => {
     }
 
     if (!subscription) {
-      console.error('Subscription not found for user:', user.id);
+      console.error('Subscription not found in database for user:', user.id);
       return new Response(
-        JSON.stringify({ error: 'Subscription not found for this user' }),
+        JSON.stringify({ error: 'Subscription not found in database' }),
         { 
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
