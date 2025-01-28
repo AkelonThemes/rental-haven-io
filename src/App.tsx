@@ -15,6 +15,7 @@ import TenantDashboard from "./pages/TenantDashboard";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
 import { useRole } from "./hooks/use-role";
+import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
 
@@ -22,10 +23,21 @@ const App = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { role, loading: roleLoading } = useRole();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Set up initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Error getting session:", error);
+        toast({
+          title: "Session Error",
+          description: "Please sign in again to continue.",
+          variant: "destructive",
+        });
+        handleSignOut();
+        return;
+      }
       setSession(session);
       setLoading(false);
     });
@@ -34,10 +46,13 @@ const App = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Clear session if user logs out
       if (!session) {
         setSession(null);
         queryClient.clear(); // Clear any cached data
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again to continue.",
+        });
         return;
       }
 
@@ -48,7 +63,17 @@ const App = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [queryClient]);
+  }, [queryClient, toast]);
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      queryClient.clear();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   // Show loading state
   if (loading || roleLoading) {
