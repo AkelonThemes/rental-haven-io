@@ -74,18 +74,22 @@ const Account = () => {
     queryFn: async () => {
       if (!profile?.id) return null;
 
-      const { data: subscription, error } = await supabase
+      console.log('Fetching subscription for profile:', profile.id);
+      const { data, error } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("profile_id", profile.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) {
         console.error('Subscription error:', error);
         throw error;
       }
-      
-      return subscription;
+
+      console.log('Subscription data:', data);
+      return data;
     },
     enabled: !!profile?.id,
     refetchInterval: sessionId ? 1000 : false, // Poll every second if we have a session_id
