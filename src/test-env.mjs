@@ -23,7 +23,7 @@ async function testEnvironmentVariables() {
   // Test Stripe connection
   try {
     const stripe = new Stripe(stripeKey || "", {
-      apiVersion: "2024-12-18.acacia",
+      apiVersion: "2025-01-27.acacia",
     });
     const balance = await stripe.balance.retrieve();
     console.log("- Stripe Connection: ✅ Success");
@@ -53,4 +53,4 @@ async function testEnvironmentVariables() {
   }
 }
 
-testEnvironmentVariables(); 
+testEnvironmentVariables();

@@ -25,7 +25,7 @@ async function testEnvironmentVariables() {
     if (!stripeKey) throw new Error("Stripe key is missing");
     
     const stripe = new Stripe(stripeKey, {
-      apiVersion: "2024-12-18.acacia",
+      apiVersion: "2025-01-27.acacia",
     });
 
     // Test basic Stripe connection
@@ -44,7 +44,6 @@ async function testEnvironmentVariables() {
           timestamp: testTimestamp,
         });
         
-        // Use constructEventAsync instead of constructEvent
         await stripe.webhooks.constructEventAsync(
           testPayload,
           signature,
