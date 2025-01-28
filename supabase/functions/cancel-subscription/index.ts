@@ -65,12 +65,11 @@ serve(async (req) => {
     });
 
     // First verify the subscription exists and belongs to the user
-    const { data: subscription, error: dbError } = await supabaseClient
+    const { data: subscriptions, error: dbError } = await supabaseClient
       .from('subscriptions')
       .select('*')
       .eq('stripe_subscription_id', subscriptionId)
-      .eq('profile_id', user.id)
-      .maybeSingle();
+      .eq('profile_id', user.id);
 
     if (dbError) {
       console.error('Database error:', dbError);
@@ -83,7 +82,7 @@ serve(async (req) => {
       );
     }
 
-    if (!subscription) {
+    if (!subscriptions || subscriptions.length === 0) {
       console.error('Subscription not found in database for user:', user.id);
       return new Response(
         JSON.stringify({ error: 'Subscription not found in database' }),
@@ -94,6 +93,8 @@ serve(async (req) => {
       );
     }
 
+    // Get the most recent subscription
+    const subscription = subscriptions[0];
     console.log('Found subscription in database:', subscription);
 
     try {
