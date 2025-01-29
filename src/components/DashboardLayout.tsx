@@ -43,10 +43,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const handleSignOut = async () => {
     try {
+      // First sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Clear any cached data
+      // Then clear any local storage data
       localStorage.clear();
       
       // Navigate to landing page
@@ -60,7 +61,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       console.error("Sign out error:", error);
       toast({
         title: "Error signing out",
-        description: error.message,
+        description: "There was a problem signing out. Please try again.",
         variant: "destructive",
       });
     }
