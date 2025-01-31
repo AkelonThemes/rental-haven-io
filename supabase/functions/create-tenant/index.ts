@@ -24,23 +24,27 @@ Deno.serve(async (req) => {
 
     const { tenantData } = await req.json() as { tenantData: TenantData }
     
-    // First, check if a user with this email already exists
-    const { data: existingUsers, error: userCheckError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', tenantData.email)
-      .single()
+    console.log('Checking for existing user with email:', tenantData.email)
+    
+    // First, check if a user with this email already exists in auth.users
+    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers()
+    if (getUserError) throw getUserError
 
-    if (userCheckError && userCheckError.code !== 'PGRST116') { // PGRST116 means no rows found
-      throw userCheckError
-    }
-
+    const existingUser = users.find(user => user.email === tenantData.email)
     let userId: string
 
-    if (existingUsers) {
+    if (existingUser) {
       // If user exists, use their ID
-      userId = existingUsers.id
+      userId = existingUser.id
       console.log('Using existing user:', userId)
+
+      // Update their role to tenant if needed
+      const { error: updateProfileError } = await supabase
+        .from('profiles')
+        .update({ role: 'tenant' })
+        .eq('id', userId)
+
+      if (updateProfileError) throw updateProfileError
     } else {
       // Create auth user for tenant if they don't exist
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
