@@ -26,33 +26,36 @@ Deno.serve(async (req) => {
     
     console.log('Creating tenant profile for:', tenantData.email)
     
-    // First, create a profile for the tenant
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: crypto.randomUUID(), // Generate a UUID for the profile
+    // First create the user in auth.users
+    const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+      email: tenantData.email,
+      email_confirm: true,
+      user_metadata: {
         full_name: tenantData.full_name,
         role: 'tenant'
-      })
-      .select()
-      .single()
+      }
+    })
 
-    if (profileError) {
-      console.error('Error creating profile:', profileError)
-      throw profileError
-    }
-    
-    if (!profileData) {
-      throw new Error('Failed to create profile')
+    if (userError) {
+      console.error('Error creating user:', userError)
+      throw userError
     }
 
-    console.log('Created profile:', profileData.id)
+    if (!userData.user) {
+      throw new Error('Failed to create user')
+    }
 
-    // Create tenant record with the new profile ID
+    console.log('Created user:', userData.user.id)
+
+    // The profile will be created automatically by the handle_new_user trigger
+    // Wait a moment for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // Create tenant record with the new user's profile ID
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        profile_id: profileData.id,
+        profile_id: userData.user.id,
         property_id: tenantData.property_id,
         lease_start_date: tenantData.lease_start_date,
         lease_end_date: tenantData.lease_end_date,
@@ -68,7 +71,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        profileId: profileData.id 
+        userId: userData.user.id 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
