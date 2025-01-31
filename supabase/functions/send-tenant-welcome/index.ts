@@ -35,7 +35,7 @@ serve(async (req) => {
     const { tenantEmail, tenantName, propertyAddress }: WelcomeEmailRequest = await req.json();
 
     // For testing, override the recipient email with your email
-    const testEmail = 'nlakaa1hirecars@gmail.com';
+    const testEmail = 'akelonthemes@gmail.com';
     console.log(`Original tenant email: ${tenantEmail}`);
     console.log(`Using test email: ${testEmail} for development`);
 
