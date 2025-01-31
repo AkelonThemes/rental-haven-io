@@ -50,7 +50,7 @@ export default function TenantDashboard() {
             )
           `)
           .eq('profile_id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (tenantError) throw tenantError;
 
@@ -71,7 +71,7 @@ export default function TenantDashboard() {
             .order('created_at', { ascending: false });
 
           if (requestsError) throw requestsError;
-          setMaintenanceRequests(requests);
+          setMaintenanceRequests(requests || []);
         }
       } catch (error: any) {
         toast({
