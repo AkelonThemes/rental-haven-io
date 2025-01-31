@@ -43,7 +43,21 @@ serve(async (req) => {
     const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
     console.log('Using redirect URL:', `${origin}/auth`);
 
-    // Always generate a signup link to allow password creation
+    // First, delete the user if they exist
+    console.log('Checking for existing user...');
+    const { data: users } = await supabase.auth.admin.listUsers();
+    const existingUser = users?.users.find(user => user.email === tenantEmail);
+    
+    if (existingUser) {
+      console.log('Found existing user, deleting...');
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(
+        existingUser.id
+      );
+      if (deleteError) throw deleteError;
+      console.log('Existing user deleted successfully');
+    }
+
+    // Now generate a new signup link
     console.log('Generating signup link...');
     const { data, error: signupError } = await supabase.auth.admin.generateLink({
       type: 'signup',
