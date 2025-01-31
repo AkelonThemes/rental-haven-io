@@ -59,7 +59,7 @@ export function AddTenantDialog() {
     try {
       console.log('Starting tenant creation process...');
       
-      // Get current session for landlord ID
+      // Get current session for landlord ID and access token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Not authenticated');
 
@@ -69,13 +69,16 @@ export function AddTenantDialog() {
       const property = properties.find(p => p.id === values.property_id);
       if (!property) throw new Error('Property not found');
 
-      // Call the Edge Function to create tenant
+      // Call the Edge Function with authentication token
       const { data: functionData, error: functionError } = await supabase.functions.invoke('create-tenant', {
         body: {
           tenantData: {
             ...values,
             created_by: session.user.id
           }
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
@@ -88,6 +91,9 @@ export function AddTenantDialog() {
           tenantEmail: values.email,
           tenantName: values.full_name,
           propertyAddress: property.address
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
