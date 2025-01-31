@@ -57,11 +57,11 @@ export function RentTrends({ data, isLoading }: RentTrendsProps) {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `${value}K`}
               />
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <Tooltip
-                formatter={(value) => [`$${value}`, "Amount"]}
+                formatter={(value) => [`${value}K`, "Amount"]}
                 labelFormatter={(label) => `Month: ${label}`}
               />
               <Line
