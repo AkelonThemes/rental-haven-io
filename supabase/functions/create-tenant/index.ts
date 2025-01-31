@@ -26,22 +26,29 @@ Deno.serve(async (req) => {
     
     console.log('Creating tenant profile for:', tenantData.email)
     
-    // Create a profile for the tenant (they will sign up later)
+    // First, create a profile for the tenant
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .insert({
+        id: crypto.randomUUID(), // Generate a UUID for the profile
         full_name: tenantData.full_name,
         role: 'tenant'
       })
       .select()
       .single()
 
-    if (profileError) throw profileError
-    if (!profileData) throw new Error('Failed to create profile')
+    if (profileError) {
+      console.error('Error creating profile:', profileError)
+      throw profileError
+    }
+    
+    if (!profileData) {
+      throw new Error('Failed to create profile')
+    }
 
     console.log('Created profile:', profileData.id)
 
-    // Create tenant record
+    // Create tenant record with the new profile ID
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
@@ -53,7 +60,10 @@ Deno.serve(async (req) => {
         created_by: tenantData.created_by
       })
 
-    if (tenantError) throw tenantError
+    if (tenantError) {
+      console.error('Error creating tenant:', tenantError)
+      throw tenantError
+    }
 
     return new Response(
       JSON.stringify({ 
