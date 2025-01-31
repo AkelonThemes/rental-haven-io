@@ -244,7 +244,7 @@ const Index = () => {
                       )}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">{property.rent_amount}K/month</TableCell>
+                  <TableCell className="text-right">K{property.rent_amount}/month</TableCell>
                 </TableRow>
               ))}
             </TableBody>
