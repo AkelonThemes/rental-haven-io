@@ -68,24 +68,17 @@ export function AddTenantDialog() {
       console.log('Current user (landlord) session:', session.user.id);
 
       // Call the Edge Function to create tenant
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-tenant`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('create-tenant', {
+        body: {
           tenantData: {
             ...values,
             created_by: session.user.id
           }
-        })
+        }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create tenant');
-      }
+      if (functionError) throw functionError;
+      if (!functionData) throw new Error('No response from function');
 
       // Invalidate queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
