@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,18 +15,40 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     // Clear any existing sessions on mount
     const clearSession = async () => {
       await supabase.auth.signOut();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/");
+      
+      // If there's a token in the URL, this is likely a tenant signup
+      const token = searchParams.get('token');
+      if (token) {
+        setIsSignUp(true);
+        try {
+          // Get the email from the token
+          const { data: { user }, error } = await supabase.auth.getUser(token);
+          if (error) throw error;
+          if (user?.email) {
+            setEmail(user.email);
+          }
+        } catch (error: any) {
+          console.error('Error getting user from token:', error);
+        }
+      } else {
+        // Check if there's an existing session
+        const checkSession = async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            navigate("/");
+          }
+        };
+        checkSession();
       }
     };
     clearSession();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +63,7 @@ const Auth = () => {
             emailRedirectTo: `${window.location.origin}/auth`,
             data: {
               full_name: email.split('@')[0], // Default name from email
-              role: 'landlord' // Default role
+              role: 'tenant' // Set role as tenant for tenant signups
             }
           }
         });
@@ -94,7 +116,7 @@ const Auth = () => {
           <CardTitle>{isSignUp ? "Create Account" : "Welcome Back"}</CardTitle>
           <CardDescription>
             {isSignUp
-              ? "Sign up for an account to get started"
+              ? "Set up your tenant account to get started"
               : "Sign in to your account to continue"}
           </CardDescription>
         </CardHeader>
@@ -109,6 +131,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={searchParams.get('token') !== null}
               />
             </div>
             <div className="space-y-2">
@@ -125,18 +148,20 @@ const Auth = () => {
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+              {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
             </Button>
-            <Button
-              type="button"
-              variant="link"
-              className="w-full"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp
-                ? "Already have an account? Sign In"
-                : "Don't have an account? Sign Up"}
-            </Button>
+            {!searchParams.get('token') && (
+              <Button
+                type="button"
+                variant="link"
+                className="w-full"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp
+                  ? "Already have an account? Sign In"
+                  : "Don't have an account? Sign Up"}
+              </Button>
+            )}
           </CardFooter>
         </form>
       </Card>
