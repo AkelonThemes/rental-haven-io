@@ -43,33 +43,51 @@ serve(async (req) => {
     const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
     console.log('Using redirect URL:', `${origin}/auth`);
 
-    // Generate signup link regardless of whether user exists
-    console.log('Generating signup link...');
-    const { data, error: signupError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
-      email: tenantEmail,
-      options: {
-        data: {
-          full_name: tenantName,
-          role: 'tenant'
-        },
-        redirectTo: `${origin}/auth`
-      }
-    });
+    // Check if user already exists
+    const { data: existingUser, error: userError } = await supabase.auth.admin.listUsers();
+    const userExists = existingUser?.users.some(user => user.email === tenantEmail);
 
-    if (signupError) throw signupError;
-    const actionLink = data.properties.action_link;
+    console.log('Checking if user exists:', userExists);
+
+    let actionLink: string;
+    if (userExists) {
+      console.log('User exists, generating sign-in link...');
+      const { data, error: signInError } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: tenantEmail,
+        options: {
+          redirectTo: `${origin}/auth`
+        }
+      });
+      if (signInError) throw signInError;
+      actionLink = data.properties.action_link;
+    } else {
+      console.log('New user, generating signup link...');
+      const { data, error: signupError } = await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email: tenantEmail,
+        options: {
+          data: {
+            full_name: tenantName,
+            role: 'tenant'
+          },
+          redirectTo: `${origin}/auth`
+        }
+      });
+      if (signupError) throw signupError;
+      actionLink = data.properties.action_link;
+    }
 
     const emailContent = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #333;">Welcome to PropManager!</h1>
         <p>Hello ${tenantName},</p>
-        <p>Your landlord has invited you to create your tenant account for the property at:</p>
+        <p>Your landlord has invited you to ${userExists ? 'access' : 'create'} your tenant account for the property at:</p>
         <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
-        <p>To create your tenant account and access your portal, please click the button below:</p>
+        <p>To ${userExists ? 'access' : 'create'} your tenant account and access your portal, please click the button below:</p>
         <a href="${actionLink}" 
            style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 16px;">
-          Create Your Account
+          ${userExists ? 'Access Your Account' : 'Create Your Account'}
         </a>
         <p style="margin-top: 24px; color: #666; font-size: 14px;">
           This link will expire in 24 hours. If you have any questions, please contact your property manager.
@@ -82,7 +100,7 @@ serve(async (req) => {
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
       to: [testEmail], // Using test email instead of actual tenant email
-      subject: 'Welcome to PropManager - Create Your Account',
+      subject: `Welcome to PropManager - ${userExists ? 'Access' : 'Create'} Your Account`,
       html: emailContent,
     });
 
