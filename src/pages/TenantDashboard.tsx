@@ -120,7 +120,7 @@ export default function TenantDashboard() {
                       Lease Period: {new Date(property.lease_start_date).toLocaleDateString()} - {new Date(property.lease_end_date).toLocaleDateString()}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Monthly Rent: ${property.rent_amount}
+                      Monthly Rent: K{property.rent_amount}
                     </p>
                   </div>
                 </div>

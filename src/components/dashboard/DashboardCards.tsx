@@ -61,7 +61,7 @@ export function DashboardCards({ stats, isLoading }: DashboardCardsProps) {
           </div>
           <div>
             <p className="text-sm text-gray-500">Monthly Rent</p>
-            <p className="text-lg md:text-2xl font-semibold">${stats?.totalRent.toLocaleString() || 0}</p>
+            <p className="text-lg md:text-2xl font-semibold">K{stats?.totalRent.toLocaleString() || 0}</p>
           </div>
         </div>
       </Card>
