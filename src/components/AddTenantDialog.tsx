@@ -16,19 +16,12 @@ import { useQueryClient } from "@tanstack/react-query";
 const formSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   property_id: z.string().min(1, "Property is required"),
   lease_start_date: z.string().min(1, "Lease start date is required"),
   lease_end_date: z.string().min(1, "Lease end date is required"),
   rent_amount: z.string().min(1, "Rent amount is required"),
 });
-
-function generateRandomPassword(): string {
-  const length = 12;
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-  return Array.from(crypto.getRandomValues(new Uint8Array(length)))
-    .map(x => charset[x % charset.length])
-    .join('');
-}
 
 export function AddTenantDialog() {
   const [open, setOpen] = useState(false);
@@ -40,6 +33,7 @@ export function AddTenantDialog() {
     defaultValues: {
       full_name: "",
       email: "",
+      password: "",
       property_id: "",
       lease_start_date: "",
       lease_end_date: "",
@@ -65,13 +59,17 @@ export function AddTenantDialog() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log('Starting tenant creation process...');
+      
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) throw new Error('Not authenticated');
 
-      // 1. Create auth user for tenant
+      console.log('Current user (landlord) session:', session.session.user.id);
+
+      // 1. Create auth user for tenant with provided password
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
-        password: generateRandomPassword(),
+        password: values.password,
         options: {
           data: {
             full_name: values.full_name,
@@ -80,7 +78,12 @@ export function AddTenantDialog() {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth creation error:', authError);
+        throw authError;
+      }
+
+      console.log('Tenant auth account created:', authData.user?.id);
 
       // 2. Create profile for tenant
       const { error: profileError } = await supabase
@@ -91,7 +94,12 @@ export function AddTenantDialog() {
           role: 'tenant'
         });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw profileError;
+      }
+
+      console.log('Tenant profile created');
 
       // 3. Create tenant record with created_by field
       const { error: tenantError } = await supabase
@@ -102,10 +110,22 @@ export function AddTenantDialog() {
           lease_start_date: values.lease_start_date,
           lease_end_date: values.lease_end_date,
           rent_amount: parseFloat(values.rent_amount),
-          created_by: session.session.user.id // Add the created_by field
+          created_by: session.session.user.id
         });
 
-      if (tenantError) throw tenantError;
+      if (tenantError) {
+        console.error('Tenant record creation error:', tenantError);
+        throw tenantError;
+      }
+
+      console.log('Tenant record created');
+
+      // 4. Restore the landlord's session if needed
+      const { data: currentSession } = await supabase.auth.getSession();
+      if (currentSession?.session?.user?.id !== session.session.user.id) {
+        console.log('Restoring landlord session...');
+        await supabase.auth.setSession(session.session);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       setOpen(false);
@@ -114,6 +134,7 @@ export function AddTenantDialog() {
         description: "Tenant added successfully",
       });
     } catch (error: any) {
+      console.error('Error in tenant creation:', error);
       toast({
         title: "Error adding tenant",
         description: error.message,
@@ -157,6 +178,19 @@ export function AddTenantDialog() {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
