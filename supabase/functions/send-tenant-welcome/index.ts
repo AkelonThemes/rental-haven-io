@@ -1,100 +1,76 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
-import { Resend } from "npm:resend@2.0.0"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface WelcomeEmailRequest {
-  tenantEmail: string;
-  tenantName: string;
-  propertyAddress: string;
-}
-
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log('Starting welcome email process...');
-    const { tenantEmail, tenantName, propertyAddress }: WelcomeEmailRequest = await req.json();
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const { tenantEmail, tenantName, propertyAddress } = await req.json()
+
+    console.log('Sending welcome email to:', tenantEmail)
 
     // Generate a signup link
-    const { data, error: signupError } = await supabase.auth.admin.generateLink({
+    const { data: { url }, error: signupError } = await supabase.auth.admin.generateLink({
       type: 'signup',
       email: tenantEmail,
       options: {
         redirectTo: 'https://rental-haven-io.lovable.app/auth'
       }
-    });
+    })
 
-    if (signupError) throw signupError;
-    
-    const signupLink = data.properties.action_link;
-    console.log('Generated signup link:', signupLink);
+    if (signupError) {
+      console.error('Error generating signup link:', signupError)
+      throw signupError
+    }
 
-    const emailContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #333;">Welcome to PropManager!</h1>
-        <p>Hello ${tenantName},</p>
-        <p>Your landlord has invited you to access your tenant account for the property at:</p>
-        <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
-        <p>To create your account and access the tenant portal, please click the button below:</p>
-        <a href="${signupLink}" 
-           style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 16px;">
-          Create Your Account
-        </a>
-        <p style="margin-top: 24px; color: #666; font-size: 14px;">
-          This link will expire in 24 hours. If you have any questions, please contact your property manager.
-        </p>
-      </div>
-    `;
+    // Send email with signup link using Resend
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Rental Haven <onboarding@resend.dev>',
+        to: tenantEmail,
+        subject: 'Welcome to Rental Haven - Complete Your Account Setup',
+        html: `
+          <p>Hello ${tenantName},</p>
+          <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
+          <p>To access your tenant portal, please click the link below to create your account:</p>
+          <p><a href="${url}">Create Your Account</a></p>
+          <p>This link will expire in 24 hours.</p>
+          <p>Best regards,<br>The Rental Haven Team</p>
+        `
+      })
+    })
 
-    console.log('Sending invitation email...');
-    
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: 'PropManager <onboarding@resend.dev>',
-      to: [tenantEmail],
-      subject: 'Welcome to PropManager - Create Your Account',
-      html: emailContent,
-    });
-
-    if (emailError) throw emailError;
-    console.log('Email sent successfully:', emailData);
+    if (!emailResponse.ok) {
+      const error = await emailResponse.text()
+      console.error('Error sending email:', error)
+      throw new Error('Failed to send welcome email')
+    }
 
     return new Response(
-      JSON.stringify({ 
-        success: true
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error) {
-    console.error('Error in send-tenant-welcome function:', error);
+    console.error('Error in send-tenant-welcome function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    );
+    )
   }
-});
+})

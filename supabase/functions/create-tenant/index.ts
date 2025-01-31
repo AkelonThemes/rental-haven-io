@@ -26,10 +26,14 @@ Deno.serve(async (req) => {
     
     console.log('Creating tenant profile for:', tenantData.email)
     
+    // Generate a UUID for the profile
+    const profileId = crypto.randomUUID()
+    
     // First create a profile without auth
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .insert({
+        id: profileId,
         full_name: tenantData.full_name,
         role: 'tenant'
       })
@@ -41,13 +45,13 @@ Deno.serve(async (req) => {
       throw profileError
     }
 
-    console.log('Created profile:', profile.id)
+    console.log('Created profile:', profileId)
 
     // Create tenant record with the new profile ID
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        profile_id: profile.id,
+        profile_id: profileId,
         property_id: tenantData.property_id,
         lease_start_date: tenantData.lease_start_date,
         lease_end_date: tenantData.lease_end_date,
@@ -63,7 +67,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        profileId: profile.id 
+        profileId: profileId 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
