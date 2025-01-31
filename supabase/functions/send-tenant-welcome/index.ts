@@ -16,33 +16,29 @@ Deno.serve(async (req) => {
 
     console.log('Sending welcome email to:', tenantEmail)
 
-    // Generate a password reset link for the existing user
-    const { data: { user }, error: userError } = await supabase.auth.admin.getUserByEmail(tenantEmail)
+    // Get user by email using the correct method
+    const { data: users, error: userError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', tenantEmail)
+      .single()
     
     if (userError) {
       console.error('Error getting user:', userError)
       throw userError
     }
 
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    // Generate a password reset link
-    const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: tenantEmail,
-      options: {
-        redirectTo: 'https://rental-haven-io.lovable.app/auth'
-      }
+    // Generate a magic link for the user
+    const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.inviteUserByEmail(tenantEmail, {
+      redirectTo: 'https://rental-haven-io.lovable.app/auth'
     })
 
-    if (resetError) {
-      console.error('Error generating reset link:', resetError)
-      throw resetError
+    if (magicLinkError) {
+      console.error('Error generating magic link:', magicLinkError)
+      throw magicLinkError
     }
 
-    // Send email with reset link using Resend
+    // Send email with magic link using Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -56,8 +52,8 @@ Deno.serve(async (req) => {
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
-          <p>To access your tenant portal, please click the link below to set up your password:</p>
-          <p><a href="${resetData.properties?.action_link}">Set Up Your Password</a></p>
+          <p>To access your tenant portal, please click the link below to set up your account:</p>
+          <p><a href="${magicLinkData?.properties?.action_link}">Set Up Your Account</a></p>
           <p>This link will expire in 24 hours.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
         `
