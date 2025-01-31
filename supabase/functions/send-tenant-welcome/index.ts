@@ -32,9 +32,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting welcome email process...');
     const { tenantEmail, tenantName, propertyAddress }: WelcomeEmailRequest = await req.json();
 
-    console.log(`Sending welcome email to ${tenantEmail}`);
+    console.log(`Sending welcome email to ${tenantEmail} for property at ${propertyAddress}`);
 
     // Generate a signup link that will be valid for 24 hours
     const { data: { user }, error: signupError } = await supabase.auth.admin.generateLink({
@@ -55,10 +56,13 @@ serve(async (req) => {
     }
 
     if (!user?.action_link) {
+      console.error('No action link generated');
       throw new Error('No action link generated');
     }
 
-    const { data, error } = await resend.emails.send({
+    console.log('Generated signup link successfully');
+
+    const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
       to: [tenantEmail],
       subject: 'Welcome to PropManager - Complete Your Account Setup',
@@ -80,15 +84,15 @@ serve(async (req) => {
       `,
     });
 
-    if (error) {
-      console.error('Error sending email:', error);
-      throw error;
+    if (emailError) {
+      console.error('Error sending email:', emailError);
+      throw emailError;
     }
 
-    console.log('Email sent successfully:', data);
+    console.log('Email sent successfully:', emailData);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, data: emailData }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
