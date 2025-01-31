@@ -16,17 +16,50 @@ Deno.serve(async (req) => {
 
     console.log('Sending welcome email to:', tenantEmail)
 
-    // Generate a magic link for the user
-    const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.inviteUserByEmail(tenantEmail, {
-      redirectTo: 'https://rental-haven-io.lovable.app/auth'
+    // First check if the user already exists
+    const { data: existingUser, error: userError } = await supabase.auth.admin.listUsers({
+      filter: {
+        email: tenantEmail
+      }
     })
 
-    if (magicLinkError) {
-      console.error('Error generating magic link:', magicLinkError)
-      throw magicLinkError
+    if (userError) {
+      console.error('Error checking existing user:', userError)
+      throw userError
     }
 
-    // Send email with magic link using Resend
+    let signInLink
+    if (existingUser.users.length > 0) {
+      // Generate a magic link for existing user
+      const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: tenantEmail,
+        options: {
+          redirectTo: 'https://rental-haven-io.lovable.app/auth'
+        }
+      })
+
+      if (magicLinkError) {
+        console.error('Error generating magic link:', magicLinkError)
+        throw magicLinkError
+      }
+
+      signInLink = magicLinkData.properties.action_link
+    } else {
+      // Invite new user
+      const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(tenantEmail, {
+        redirectTo: 'https://rental-haven-io.lovable.app/auth'
+      })
+
+      if (inviteError) {
+        console.error('Error inviting user:', inviteError)
+        throw inviteError
+      }
+
+      signInLink = inviteData.properties.action_link
+    }
+
+    // Send email with the appropriate link
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -36,12 +69,12 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: 'Rental Haven <onboarding@resend.dev>',
         to: tenantEmail,
-        subject: 'Welcome to Rental Haven - Set Up Your Account',
+        subject: 'Welcome to Rental Haven - Access Your Account',
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
-          <p>To access your tenant portal, please click the link below to set up your account:</p>
-          <p><a href="${magicLinkData?.properties?.action_link}">Set Up Your Account</a></p>
+          <p>To access your tenant portal, please click the link below:</p>
+          <p><a href="${signInLink}">Access Your Account</a></p>
           <p>This link will expire in 24 hours.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
         `
