@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     console.log('Sending email via Resend with link:', signInLink)
 
-    // Send email with the appropriate link
+    // Send email with the appropriate link using Resend's test configuration
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Rental Haven <rentalhaven@resend.dev>',
+        from: 'onboarding@resend.dev',
         to: tenantEmail,
         subject: 'Welcome to Rental Haven - Access Your Account',
         html: `
