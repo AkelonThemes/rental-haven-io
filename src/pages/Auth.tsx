@@ -26,10 +26,10 @@ const Auth = () => {
       if (token) {
         setIsSignUp(true);
         try {
-          // Instead of getting user from token, decode the token to get the email
-          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-          if (tokenPayload.email) {
-            setEmail(tokenPayload.email);
+          // Decode the base64 token to get the email
+          const tokenData = JSON.parse(atob(token));
+          if (tokenData.email) {
+            setEmail(tokenData.email);
           }
         } catch (error: any) {
           console.error('Error processing token:', error);
