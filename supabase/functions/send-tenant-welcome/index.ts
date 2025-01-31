@@ -40,40 +40,63 @@ serve(async (req) => {
     const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
     console.log('Using redirect URL:', `${origin}/auth`);
 
-    // Generate signup link
-    const { data, error: signupError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
-      email: tenantEmail,
-      options: {
-        data: {
-          full_name: tenantName,
-          role: 'tenant'
-        },
-        redirectTo: `${origin}/auth`
-      }
-    });
+    // Check if user already exists
+    const { data: existingUser } = await supabase.auth.admin.listUsers();
+    const userExists = existingUser.users.some(user => user.email === tenantEmail);
 
-    if (signupError) throw signupError;
-    if (!data?.properties?.action_link) throw new Error('No signup link generated');
-    
-    const actionLink = data.properties.action_link;
-    console.log('Signup link generated successfully');
+    let emailContent;
+    let actionLink;
 
-    // In test mode, we'll send the email to the Resend account email
-    const testModeEmail = 'akelonthemes@gmail.com';
-    
-    console.log('Sending invitation email...');
-    console.log('Using test mode - sending to:', testModeEmail);
-    
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: 'PropManager <onboarding@resend.dev>',
-      to: [testModeEmail], // Use test mode email
-      subject: 'Welcome to PropManager - Create Your Tenant Account',
-      html: `
+    if (userExists) {
+      console.log('User already exists, generating sign in link');
+      const { data, error: signInError } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: tenantEmail,
+        options: {
+          redirectTo: `${origin}/auth`
+        }
+      });
+
+      if (signInError) throw signInError;
+      actionLink = data.properties.action_link;
+      
+      emailContent = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333;">Welcome to PropManager!</h1>
           <p>Hello ${tenantName},</p>
-          <p>This is a test mode email. In production, this would be sent to: ${tenantEmail}</p>
+          <p>Your landlord has added you as a tenant for the property at:</p>
+          <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
+          <p>Since you already have an account, click the button below to sign in to your tenant portal:</p>
+          <a href="${actionLink}" 
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 16px;">
+            Sign In to Tenant Portal
+          </a>
+          <p style="margin-top: 24px; color: #666; font-size: 14px;">
+            This link will expire in 24 hours. If you have any questions, please contact your property manager.
+          </p>
+        </div>
+      `;
+    } else {
+      console.log('New user, generating signup link');
+      const { data, error: signupError } = await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email: tenantEmail,
+        options: {
+          data: {
+            full_name: tenantName,
+            role: 'tenant'
+          },
+          redirectTo: `${origin}/auth`
+        }
+      });
+
+      if (signupError) throw signupError;
+      actionLink = data.properties.action_link;
+
+      emailContent = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #333;">Welcome to PropManager!</h1>
+          <p>Hello ${tenantName},</p>
           <p>Your landlord has invited you to create your tenant account for the property at:</p>
           <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
           <p>To create your tenant account and access your portal, please click the button below:</p>
@@ -85,7 +108,16 @@ serve(async (req) => {
             This link will expire in 24 hours. If you have any questions, please contact your property manager.
           </p>
         </div>
-      `,
+      `;
+    }
+
+    console.log('Sending invitation email...');
+    
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: 'PropManager <onboarding@resend.dev>',
+      to: [tenantEmail],
+      subject: userExists ? 'Access Your Tenant Portal - PropManager' : 'Welcome to PropManager - Create Your Account',
+      html: emailContent,
     });
 
     if (emailError) {
@@ -99,9 +131,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         data: emailData,
-        testMode: true,
-        sentTo: testModeEmail,
-        originalRecipient: tenantEmail
+        userExists
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
