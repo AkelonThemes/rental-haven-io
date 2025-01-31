@@ -62,16 +62,9 @@ Deno.serve(async (req) => {
       userId = authData.user.id
       console.log('Created new user:', userId)
 
-      // Create profile for new user
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          full_name: tenantData.full_name,
-          role: 'tenant'
-        })
-
-      if (profileError) throw profileError
+      // Create profile for new user only
+      // The handle_new_user trigger will create the profile automatically
+      console.log('Profile will be created by handle_new_user trigger')
     }
 
     // Create tenant record
