@@ -79,15 +79,22 @@ serve(async (req) => {
       console.log('Signup link generated successfully');
     }
 
+    // In test mode, we'll send the email to the Resend account email
+    // This is temporary until a domain is verified
+    const testModeEmail = 'akelonthemes@gmail.com';
+    
     console.log('Sending email with action link...');
+    console.log('Using test mode - sending to:', testModeEmail);
+    
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
-      to: [tenantEmail],
+      to: [testModeEmail], // Use test mode email
       subject: existingUser ? 'Welcome Back to PropManager' : 'Welcome to PropManager - Complete Your Account Setup',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333;">Welcome ${existingUser ? 'Back ' : ''}to PropManager!</h1>
           <p>Hello ${tenantName},</p>
+          <p>This is a test mode email. In production, this would be sent to: ${tenantEmail}</p>
           <p>${existingUser ? 'Your landlord has added you' : 'Your account has been created'} in PropManager for the property at:</p>
           <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
           <p>${existingUser ? 'To access your tenant portal, please click the button below:' : 'To complete your account setup and access your tenant portal, please click the button below:'}</p>
@@ -110,7 +117,13 @@ serve(async (req) => {
     console.log('Email sent successfully:', emailData);
 
     return new Response(
-      JSON.stringify({ success: true, data: emailData }),
+      JSON.stringify({ 
+        success: true, 
+        data: emailData,
+        testMode: true,
+        sentTo: testModeEmail,
+        originalRecipient: tenantEmail 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
