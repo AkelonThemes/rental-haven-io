@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
 
     let signInLink
     if (existingUser.users.length > 0) {
+      console.log('User exists, generating magic link')
       // Generate a magic link for existing user
       const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
@@ -46,6 +47,7 @@ Deno.serve(async (req) => {
 
       signInLink = magicLinkData.properties.action_link
     } else {
+      console.log('New user, sending invitation')
       // Invite new user
       const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(tenantEmail, {
         redirectTo: 'https://rental-haven-io.lovable.app/auth'
@@ -58,6 +60,8 @@ Deno.serve(async (req) => {
 
       signInLink = inviteData.properties.action_link
     }
+
+    console.log('Sending email via Resend with link:', signInLink)
 
     // Send email with the appropriate link
     const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -82,10 +86,13 @@ Deno.serve(async (req) => {
     })
 
     if (!emailResponse.ok) {
-      const error = await emailResponse.text()
-      console.error('Error sending email:', error)
-      throw new Error('Failed to send welcome email')
+      const errorData = await emailResponse.text()
+      console.error('Resend API error:', errorData)
+      throw new Error(`Failed to send welcome email: ${errorData}`)
     }
+
+    const emailData = await emailResponse.json()
+    console.log('Email sent successfully:', emailData)
 
     return new Response(
       JSON.stringify({ success: true }),
