@@ -1,81 +1,45 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Receipt, Wrench, AlertTriangle } from "lucide-react";
+import { Receipt, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-interface TenantProperty {
+interface Payment {
   id: string;
-  address: string;
-  rent_amount: number;
-  lease_start_date: string;
-  lease_end_date: string;
-}
-
-interface MaintenanceRequest {
-  id: string;
-  title: string;
+  amount: number;
   status: string;
-  priority: string;
+  payment_date: string | null;
   created_at: string;
 }
 
 export default function TenantDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [property, setProperty] = useState<TenantProperty | null>(null);
-  const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
+  const [latestPayment, setLatestPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchTenantData() {
+    async function fetchLatestPayment() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        // Fetch tenant's property
-        const { data: tenantData, error: tenantError } = await supabase
-          .from('tenants')
-          .select(`
-            property_id,
-            lease_start_date,
-            lease_end_date,
-            rent_amount,
-            property:properties(
-              id,
-              address
-            )
-          `)
-          .eq('profile_id', session.user.id)
+        const { data: payment, error } = await supabase
+          .from('payments')
+          .select('id, amount, status, payment_date, created_at')
+          .eq('payment_type', 'rent')
+          .eq('tenant_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
-        if (tenantError) throw tenantError;
-
-        if (tenantData) {
-          setProperty({
-            id: tenantData.property.id,
-            address: tenantData.property.address,
-            rent_amount: tenantData.rent_amount,
-            lease_start_date: tenantData.lease_start_date,
-            lease_end_date: tenantData.lease_end_date,
-          });
-
-          // Fetch maintenance requests
-          const { data: requests, error: requestsError } = await supabase
-            .from('maintenance_requests')
-            .select('*')
-            .eq('property_id', tenantData.property.id)
-            .order('created_at', { ascending: false });
-
-          if (requestsError) throw requestsError;
-          setMaintenanceRequests(requests || []);
-        }
+        if (error) throw error;
+        setLatestPayment(payment);
       } catch (error: any) {
         toast({
-          title: "Error fetching tenant data",
+          title: "Error fetching payment data",
           description: error.message,
           variant: "destructive",
         });
@@ -84,7 +48,7 @@ export default function TenantDashboard() {
       }
     }
 
-    fetchTenantData();
+    fetchLatestPayment();
   }, [toast]);
 
   if (loading) {
@@ -105,91 +69,58 @@ export default function TenantDashboard() {
           <p className="text-gray-600">Welcome to your tenant portal</p>
         </div>
 
-        {property ? (
-          <>
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Latest Payment</h2>
+            </div>
+          </div>
+
+          {latestPayment ? (
+            <div className="mt-4">
+              <div className="flex justify-between items-center">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <Home className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold">Your Residence</h2>
-                  </div>
-                  <p className="mt-2 text-gray-600">{property.address}</p>
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm text-gray-600">
-                      Lease Period: {new Date(property.lease_start_date).toLocaleDateString()} - {new Date(property.lease_end_date).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Monthly Rent: K{property.rent_amount}
-                    </p>
-                  </div>
+                  <p className="font-medium">Rent Payment</p>
+                  <p className="text-sm text-gray-500">
+                    {latestPayment.payment_date 
+                      ? `Paid on ${new Date(latestPayment.payment_date).toLocaleDateString()}`
+                      : `Created on ${new Date(latestPayment.created_at).toLocaleDateString()}`
+                    }
+                  </p>
                 </div>
-                <Button onClick={() => navigate('/maintenance/new')}>
-                  <Wrench className="mr-2 h-4 w-4" />
-                  Request Maintenance
-                </Button>
+                <div className="flex items-center gap-4">
+                  <span className={`px-2 py-1 text-sm rounded-full ${
+                    latestPayment.status === 'completed' 
+                      ? 'bg-green-100 text-green-700'
+                      : latestPayment.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : latestPayment.status === 'failed'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {latestPayment.status}
+                  </span>
+                  <span className="font-semibold">K{latestPayment.amount}</span>
+                </div>
               </div>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Receipt className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">Recent Payments</h2>
-                </div>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate('/payments')}
-                >
-                  View All Payments
-                </Button>
-              </Card>
-
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Wrench className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">Maintenance Requests</h2>
-                </div>
-                {maintenanceRequests.length > 0 ? (
-                  <div className="space-y-4">
-                    {maintenanceRequests.slice(0, 3).map((request) => (
-                      <div key={request.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{request.title}</p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(request.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <span className={`px-2 py-1 text-sm rounded-full ${
-                          request.status === 'completed' 
-                            ? 'bg-green-100 text-green-700'
-                            : request.priority === 'high'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {request.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-600 text-center">No maintenance requests</p>
-                )}
-              </Card>
+              <button
+                onClick={() => navigate('/payments')}
+                className="mt-4 text-primary hover:underline text-sm w-full text-center"
+              >
+                View All Payments
+              </button>
             </div>
-          </>
-        ) : (
-          <Card className="p-6">
-            <div className="flex items-center gap-4">
-              <AlertTriangle className="h-6 w-6 text-yellow-500" />
-              <div>
-                <h3 className="font-semibold">No Property Associated</h3>
-                <p className="text-gray-600">Please contact your property manager to set up your account.</p>
-              </div>
+          ) : (
+            <div className="text-center py-8">
+              <Receipt className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-4 text-lg font-semibold">No payments found</h3>
+              <p className="mt-2 text-gray-500">
+                You don't have any rental payments recorded yet.
+              </p>
             </div>
-          </Card>
-        )}
+          )}
+        </Card>
       </div>
     </DashboardLayout>
   );
