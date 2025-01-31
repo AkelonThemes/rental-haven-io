@@ -85,21 +85,34 @@ serve(async (req) => {
       console.log('Existing user and associated data deleted successfully');
     }
 
-    // Now generate a new signup link
-    console.log('Generating signup link...');
-    const { data, error: signupError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
+    // Generate a temporary password for initial signup
+    const tempPassword = crypto.randomUUID();
+    
+    // Create user with temporary password
+    console.log('Creating user with temporary password...');
+    const { data: signupData, error: signupError } = await supabase.auth.admin.createUser({
       email: tenantEmail,
-      options: {
-        data: {
-          full_name: tenantName,
-          role: 'tenant'
-        },
-        redirectTo: `${origin}/auth`
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
+        full_name: tenantName,
+        role: 'tenant'
       }
     });
 
     if (signupError) throw signupError;
+
+    // Generate password reset link for the user to set their own password
+    console.log('Generating password reset link...');
+    const { data, error: resetError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: tenantEmail,
+      options: {
+        redirectTo: `${origin}/auth`
+      }
+    });
+
+    if (resetError) throw resetError;
     const actionLink = data.properties.action_link;
 
     const emailContent = `
