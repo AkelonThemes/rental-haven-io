@@ -63,6 +63,10 @@ Deno.serve(async (req) => {
 
     console.log('Sending email via Resend with link:', signInLink)
 
+    // During development, we'll send a test email to the registered email
+    const testEmail = 'akelonthemes@gmail.com' // The email registered with Resend
+    console.log(`Development mode: Redirecting email to ${testEmail} instead of ${tenantEmail}`)
+
     // Send email with the appropriate link using Resend's test configuration
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -72,8 +76,8 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: tenantEmail,
-        subject: 'Welcome to Rental Haven - Access Your Account',
+        to: testEmail, // Send to the test email during development
+        subject: '[TEST] Welcome to Rental Haven - Access Your Account',
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
@@ -81,6 +85,7 @@ Deno.serve(async (req) => {
           <p><a href="${signInLink}">Access Your Account</a></p>
           <p>This link will expire in 24 hours.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
+          <p style="color: #666; font-size: 12px;">Note: This is a test email. In production, this would be sent to: ${tenantEmail}</p>
         `
       })
     })
