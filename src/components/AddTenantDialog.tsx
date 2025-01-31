@@ -136,7 +136,10 @@ export function AddTenantDialog() {
 
       console.log('Tenant record created');
 
+      // Invalidate both tenants and dashboard stats queries to update UI
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      
       setOpen(false);
       toast({
         title: "Success",
