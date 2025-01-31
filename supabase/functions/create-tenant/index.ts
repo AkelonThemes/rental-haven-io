@@ -24,54 +24,28 @@ Deno.serve(async (req) => {
 
     const { tenantData } = await req.json() as { tenantData: TenantData }
     
-    console.log('Checking for existing user with email:', tenantData.email)
+    console.log('Creating tenant profile for:', tenantData.email)
     
-    // First, check if a user with this email already exists in auth.users
-    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers()
-    if (getUserError) throw getUserError
-
-    const existingUser = users.find(user => user.email === tenantData.email)
-    let userId: string
-
-    if (existingUser) {
-      // If user exists, use their ID
-      userId = existingUser.id
-      console.log('Using existing user:', userId)
-
-      // Update their role to tenant if needed
-      const { error: updateProfileError } = await supabase
-        .from('profiles')
-        .update({ role: 'tenant' })
-        .eq('id', userId)
-
-      if (updateProfileError) throw updateProfileError
-    } else {
-      // Create auth user for tenant if they don't exist
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: tenantData.email,
-        email_confirm: true,
-        user_metadata: {
-          full_name: tenantData.full_name,
-          role: 'tenant'
-        }
+    // Create a profile for the tenant (they will sign up later)
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        full_name: tenantData.full_name,
+        role: 'tenant'
       })
+      .select()
+      .single()
 
-      if (authError) throw authError
-      if (!authData.user) throw new Error('Failed to create auth user')
+    if (profileError) throw profileError
+    if (!profileData) throw new Error('Failed to create profile')
 
-      userId = authData.user.id
-      console.log('Created new user:', userId)
-
-      // Create profile for new user only
-      // The handle_new_user trigger will create the profile automatically
-      console.log('Profile will be created by handle_new_user trigger')
-    }
+    console.log('Created profile:', profileData.id)
 
     // Create tenant record
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        profile_id: userId,
+        profile_id: profileData.id,
         property_id: tenantData.property_id,
         lease_start_date: tenantData.lease_start_date,
         lease_end_date: tenantData.lease_end_date,
@@ -82,7 +56,10 @@ Deno.serve(async (req) => {
     if (tenantError) throw tenantError
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true,
+        profileId: profileData.id 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
