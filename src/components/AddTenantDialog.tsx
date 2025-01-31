@@ -61,20 +61,21 @@ export function AddTenantDialog() {
     try {
       console.log('Starting tenant creation process...');
       
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) throw new Error('Not authenticated');
+      // Store the current session before making any auth changes
+      const { data: currentSession } = await supabase.auth.getSession();
+      if (!currentSession?.session?.user) throw new Error('Not authenticated');
+      const landlordSession = currentSession.session;
 
-      console.log('Current user (landlord) session:', session.session.user.id);
+      console.log('Current user (landlord) session:', landlordSession.user.id);
 
-      // 1. Create auth user for tenant with provided password
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // 1. Create auth user for tenant using admin API to avoid auto-login
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: values.email,
         password: values.password,
-        options: {
-          data: {
-            full_name: values.full_name,
-            role: 'tenant'
-          }
+        email_confirm: true,
+        user_metadata: {
+          full_name: values.full_name,
+          role: 'tenant'
         }
       });
 
@@ -125,7 +126,7 @@ export function AddTenantDialog() {
           lease_start_date: values.lease_start_date,
           lease_end_date: values.lease_end_date,
           rent_amount: parseFloat(values.rent_amount),
-          created_by: session.session.user.id
+          created_by: landlordSession.user.id
         });
 
       if (tenantError) {
@@ -134,13 +135,6 @@ export function AddTenantDialog() {
       }
 
       console.log('Tenant record created');
-
-      // 4. Restore the landlord's session if needed
-      const { data: currentSession } = await supabase.auth.getSession();
-      if (currentSession?.session?.user?.id !== session.session.user.id) {
-        console.log('Restoring landlord session...');
-        await supabase.auth.setSession(session.session);
-      }
 
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       setOpen(false);
