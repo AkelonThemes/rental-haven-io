@@ -16,15 +16,17 @@ Deno.serve(async (req) => {
 
     console.log('Sending welcome email to:', tenantEmail)
 
-    // Check if user already exists
-    const { data: existingUser, error: lookupError } = await supabase.auth.admin.getUserByEmail(tenantEmail)
+    // Check if user already exists by listing users and filtering
+    const { data: users, error: lookupError } = await supabase.auth.admin.listUsers()
     
     if (lookupError) {
-      console.error('Error looking up user:', lookupError)
+      console.error('Error looking up users:', lookupError)
       throw lookupError
     }
 
+    const existingUser = users.users.find(user => user.email === tenantEmail)
     let tempPassword = ''
+
     if (!existingUser) {
       // Generate a temporary password only for new users
       tempPassword = crypto.randomUUID().slice(0, 12)
@@ -47,7 +49,7 @@ Deno.serve(async (req) => {
 
       console.log('Created new auth user:', authUser.user?.id)
     } else {
-      console.log('User already exists:', existingUser.user.id)
+      console.log('User already exists:', existingUser.id)
       // For existing users, we'll generate a password reset link
       const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
         type: 'recovery',
