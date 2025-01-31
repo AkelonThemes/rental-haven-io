@@ -16,21 +16,33 @@ Deno.serve(async (req) => {
 
     console.log('Sending welcome email to:', tenantEmail)
 
-    // Generate a signup link
-    const { data: { url }, error: signupError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
+    // Generate a password reset link for the existing user
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserByEmail(tenantEmail)
+    
+    if (userError) {
+      console.error('Error getting user:', userError)
+      throw userError
+    }
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    // Generate a password reset link
+    const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
       email: tenantEmail,
       options: {
         redirectTo: 'https://rental-haven-io.lovable.app/auth'
       }
     })
 
-    if (signupError) {
-      console.error('Error generating signup link:', signupError)
-      throw signupError
+    if (resetError) {
+      console.error('Error generating reset link:', resetError)
+      throw resetError
     }
 
-    // Send email with signup link using Resend
+    // Send email with reset link using Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -40,12 +52,12 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: 'Rental Haven <onboarding@resend.dev>',
         to: tenantEmail,
-        subject: 'Welcome to Rental Haven - Complete Your Account Setup',
+        subject: 'Welcome to Rental Haven - Set Up Your Account',
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
-          <p>To access your tenant portal, please click the link below to create your account:</p>
-          <p><a href="${url}">Create Your Account</a></p>
+          <p>To access your tenant portal, please click the link below to set up your password:</p>
+          <p><a href="${resetData.properties?.action_link}">Set Up Your Password</a></p>
           <p>This link will expire in 24 hours.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
         `
