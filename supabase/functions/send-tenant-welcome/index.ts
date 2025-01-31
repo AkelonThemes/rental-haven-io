@@ -66,9 +66,9 @@ Deno.serve(async (req) => {
 
     // Create a simple base64 encoded token with the email
     const token = btoa(JSON.stringify({ email: tenantEmail }))
-    const signUpLink = `https://rental-haven-io.lovable.app/auth?token=${token}`
+    const signInLink = `https://rental-haven-io.lovable.app/auth`
 
-    console.log('Sending email via Resend with link:', signUpLink)
+    console.log('Sending email via Resend with link:', signInLink)
 
     // During development, we'll send a test email to the registered email
     const testEmail = 'akelonthemes@gmail.com' // The email registered with Resend
@@ -88,18 +88,18 @@ Deno.serve(async (req) => {
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
-          ${!existingUser ? `
-          <p>Here are your temporary login credentials:</p>
+          <p>Here are your login credentials:</p>
           <ul>
             <li><strong>Email:</strong> ${tenantEmail}</li>
-            <li><strong>Temporary Password:</strong> ${tempPassword}</li>
+            <li><strong>Password:</strong> ${tempPassword}</li>
           </ul>
+          <p>Please use these credentials to log in at:</p>
+          <p><a href="${signInLink}">Sign In to Your Account</a></p>
+          ${!existingUser ? `
+          <p><strong>Important:</strong> For security reasons, we recommend changing your password after your first login.</p>
           ` : `
           <p>Since you already have an account, we've sent a password reset link to your email address.</p>
           `}
-          <p>Please use these credentials to log in at the link below:</p>
-          <p><a href="${signUpLink}">Access Your Account</a></p>
-          <p><strong>Important:</strong> For security reasons, please change your password after your first login.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
           <p style="color: #666; font-size: 12px;">Note: This is a test email. In production, this would be sent to: ${tenantEmail}</p>
         `
