@@ -65,10 +65,13 @@ export function AddTenantDialog() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) throw new Error('Not authenticated');
+
       // 1. Create auth user for tenant
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
-        password: generateRandomPassword(), // Implement this function
+        password: generateRandomPassword(),
         options: {
           data: {
             full_name: values.full_name,
@@ -90,7 +93,7 @@ export function AddTenantDialog() {
 
       if (profileError) throw profileError;
 
-      // 3. Create tenant record
+      // 3. Create tenant record with created_by field
       const { error: tenantError } = await supabase
         .from('tenants')
         .insert({
@@ -98,7 +101,8 @@ export function AddTenantDialog() {
           property_id: values.property_id,
           lease_start_date: values.lease_start_date,
           lease_end_date: values.lease_end_date,
-          rent_amount: parseFloat(values.rent_amount)
+          rent_amount: parseFloat(values.rent_amount),
+          created_by: session.session.user.id // Add the created_by field
         });
 
       if (tenantError) throw tenantError;
