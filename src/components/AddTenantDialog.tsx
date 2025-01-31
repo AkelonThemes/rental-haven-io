@@ -83,29 +83,44 @@ export function AddTenantDialog() {
         throw authError;
       }
 
-      console.log('Tenant auth account created:', authData.user?.id);
-
-      // 2. Create profile for tenant
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user!.id,
-          full_name: values.full_name,
-          role: 'tenant'
-        });
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        throw profileError;
+      if (!authData.user) {
+        throw new Error('Failed to create auth user');
       }
 
-      console.log('Tenant profile created');
+      console.log('Tenant auth account created:', authData.user.id);
+
+      // 2. Check if profile exists first
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', authData.user.id)
+        .single();
+
+      // Only create profile if it doesn't exist
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            full_name: values.full_name,
+            role: 'tenant'
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw profileError;
+        }
+
+        console.log('Tenant profile created');
+      } else {
+        console.log('Profile already exists, skipping creation');
+      }
 
       // 3. Create tenant record with created_by field
       const { error: tenantError } = await supabase
         .from('tenants')
         .insert({
-          profile_id: authData.user!.id,
+          profile_id: authData.user.id,
           property_id: values.property_id,
           lease_start_date: values.lease_start_date,
           lease_end_date: values.lease_end_date,
