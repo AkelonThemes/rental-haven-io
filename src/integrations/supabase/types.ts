@@ -145,6 +145,7 @@ export type Database = {
           company_name: string | null
           created_at: string
           full_name: string | null
+          has_completed_signup: boolean | null
           id: string
           role: string | null
           updated_at: string
@@ -153,6 +154,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           full_name?: string | null
+          has_completed_signup?: boolean | null
           id: string
           role?: string | null
           updated_at?: string
@@ -161,6 +163,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           full_name?: string | null
+          has_completed_signup?: boolean | null
           id?: string
           role?: string | null
           updated_at?: string

@@ -16,7 +16,6 @@ import { useQueryClient } from "@tanstack/react-query";
 const formSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
   property_id: z.string().min(1, "Property is required"),
   lease_start_date: z.string().min(1, "Lease start date is required"),
   lease_end_date: z.string().min(1, "Lease end date is required"),
@@ -33,7 +32,6 @@ export function AddTenantDialog() {
     defaultValues: {
       full_name: "",
       email: "",
-      password: "",
       property_id: "",
       lease_start_date: "",
       lease_end_date: "",
@@ -84,13 +82,12 @@ export function AddTenantDialog() {
       if (functionError) throw functionError;
       if (!functionData) throw new Error('No response from function');
 
-      // Send welcome email
+      // Send welcome email with signup link
       const { error: emailError } = await supabase.functions.invoke('send-tenant-welcome', {
         body: {
           tenantEmail: values.email,
           tenantName: values.full_name,
-          propertyAddress: property.address,
-          password: values.password
+          propertyAddress: property.address
         }
       });
 
@@ -157,19 +154,6 @@ export function AddTenantDialog() {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

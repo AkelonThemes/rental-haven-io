@@ -12,7 +12,6 @@ interface WelcomeEmailRequest {
   tenantEmail: string;
   tenantName: string;
   propertyAddress: string;
-  password: string;
 }
 
 serve(async (req) => {
@@ -22,32 +21,42 @@ serve(async (req) => {
   }
 
   try {
-    const { tenantEmail, tenantName, propertyAddress, password }: WelcomeEmailRequest = await req.json();
+    const { tenantEmail, tenantName, propertyAddress }: WelcomeEmailRequest = await req.json();
 
     console.log(`Sending welcome email to ${tenantEmail}`);
+
+    // Generate a signup link that will be valid for 24 hours
+    const { data: { user }, error: signupError } = await supabase.auth.admin.generateLink({
+      type: 'signup',
+      email: tenantEmail,
+      options: {
+        data: {
+          full_name: tenantName,
+          role: 'tenant'
+        },
+        redirectTo: `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/auth`
+      }
+    });
+
+    if (signupError) throw signupError;
 
     const { data, error } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
       to: [tenantEmail],
-      subject: 'Welcome to PropManager - Your Account Details',
+      subject: 'Welcome to PropManager - Complete Your Account Setup',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333;">Welcome to PropManager!</h1>
           <p>Hello ${tenantName},</p>
           <p>Your landlord has created an account for you in PropManager for the property at:</p>
           <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
-          <p>You can now access your tenant portal using these credentials:</p>
-          <ul>
-            <li>Email: ${tenantEmail}</li>
-            <li>Password: ${password}</li>
-          </ul>
-          <p>For security reasons, we recommend changing your password after your first login.</p>
-          <a href="${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/auth" 
+          <p>To complete your account setup and access your tenant portal, please click the button below:</p>
+          <a href="${user.action_link}" 
              style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 16px;">
-            Login to Your Account
+            Complete Account Setup
           </a>
           <p style="margin-top: 24px; color: #666; font-size: 14px;">
-            If you have any questions, please contact your property manager.
+            This link will expire in 24 hours. If you have any questions, please contact your property manager.
           </p>
         </div>
       `,
