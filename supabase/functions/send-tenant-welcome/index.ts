@@ -1,7 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 import { Resend } from "npm:resend@2.0.0"
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +49,14 @@ serve(async (req) => {
       }
     });
 
-    if (signupError) throw signupError;
+    if (signupError) {
+      console.error('Error generating signup link:', signupError);
+      throw signupError;
+    }
+
+    if (!user?.action_link) {
+      throw new Error('No action link generated');
+    }
 
     const { data, error } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
