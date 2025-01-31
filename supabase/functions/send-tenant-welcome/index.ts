@@ -7,9 +7,35 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     const { tenantEmail, tenantName, propertyAddress } = await req.json()
 
     console.log('Sending welcome email to:', tenantEmail)
+
+    // Generate a temporary password
+    const tempPassword = crypto.randomUUID().slice(0, 12)
+
+    // Create the auth user with the temporary password
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: tenantEmail,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
+        full_name: tenantName,
+        role: 'tenant'
+      }
+    })
+
+    if (authError) {
+      console.error('Error creating auth user:', authError)
+      throw authError
+    }
+
+    console.log('Created auth user:', authUser.user?.id)
 
     // Create a simple base64 encoded token with the email
     const token = btoa(JSON.stringify({ email: tenantEmail }))
@@ -31,12 +57,18 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
         to: testEmail, // Send to the test email during development
-        subject: '[TEST] Welcome to Rental Haven - Create Your Account',
+        subject: '[TEST] Welcome to Rental Haven - Your Login Credentials',
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
-          <p>To create your tenant account, please click the link below:</p>
-          <p><a href="${signUpLink}">Create Your Account</a></p>
+          <p>Here are your temporary login credentials:</p>
+          <ul>
+            <li><strong>Email:</strong> ${tenantEmail}</li>
+            <li><strong>Temporary Password:</strong> ${tempPassword}</li>
+          </ul>
+          <p>Please use these credentials to log in at the link below:</p>
+          <p><a href="${signUpLink}">Access Your Account</a></p>
+          <p><strong>Important:</strong> For security reasons, please change your password after your first login.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
           <p style="color: #666; font-size: 12px;">Note: This is a test email. In production, this would be sent to: ${tenantEmail}</p>
         `
