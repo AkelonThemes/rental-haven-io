@@ -36,7 +36,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
     { icon: <Wrench className="w-5 h-5" />, label: "Maintenance", href: "/maintenance" },
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
-    { icon: <UserCircle className="w-5 h-5" />, label: "Account", href: "/account" },
   ];
 
   const menuItems = role === 'tenant' ? tenantMenuItems : landlordMenuItems;
