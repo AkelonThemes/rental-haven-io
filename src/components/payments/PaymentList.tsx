@@ -58,7 +58,7 @@ export function PaymentList({ payments, isLoading }: PaymentListProps) {
             >
               {payment.status}
             </span>
-            <span className="font-semibold">{payment.amount}K</span>
+            <span className="font-semibold">K{payment.amount}</span>
           </div>
         </div>
       ))}

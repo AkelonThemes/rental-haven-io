@@ -17,7 +17,7 @@ export function PaymentStats({ totalCollected, totalPending }: PaymentStatsProps
           <div>
             <p className="text-sm text-gray-500">Total Collected</p>
             <p className="text-2xl font-semibold">
-              ${totalCollected.toLocaleString()}
+              K{totalCollected.toLocaleString()}
             </p>
           </div>
         </div>
@@ -31,7 +31,7 @@ export function PaymentStats({ totalCollected, totalPending }: PaymentStatsProps
           <div>
             <p className="text-sm text-gray-500">Pending</p>
             <p className="text-2xl font-semibold">
-              ${totalPending.toLocaleString()}
+              K{totalPending.toLocaleString()}
             </p>
           </div>
         </div>

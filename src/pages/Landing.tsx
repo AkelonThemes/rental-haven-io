@@ -101,7 +101,7 @@ const Landing = () => {
             <CardHeader>
               <CardTitle>Free Plan</CardTitle>
               <CardDescription>Perfect for getting started</CardDescription>
-              <div className="text-3xl font-bold mt-4">$0/month</div>
+              <div className="text-3xl font-bold mt-4">K0/month</div>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
@@ -128,7 +128,7 @@ const Landing = () => {
             <CardHeader>
               <CardTitle>Starter Plan</CardTitle>
               <CardDescription>For growing property portfolios</CardDescription>
-              <div className="text-3xl font-bold mt-4">$29/month</div>
+              <div className="text-3xl font-bold mt-4">K29/month</div>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
