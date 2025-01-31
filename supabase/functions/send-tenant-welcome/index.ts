@@ -43,13 +43,17 @@ serve(async (req) => {
     const existingUser = users.find(user => user.email === tenantEmail);
     let actionLink: string;
 
+    // Get the request origin for redirect URL
+    const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
+    console.log('Using redirect URL:', `${origin}/auth`);
+
     if (existingUser) {
       console.log('Existing user found, generating magic link...');
       const { data, error: magicLinkError } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: tenantEmail,
         options: {
-          redirectTo: `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/auth`
+          redirectTo: `${origin}/auth`
         }
       });
 
@@ -68,7 +72,7 @@ serve(async (req) => {
             full_name: tenantName,
             role: 'tenant'
           },
-          redirectTo: `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/auth`
+          redirectTo: `${origin}/auth`
         }
       });
 
