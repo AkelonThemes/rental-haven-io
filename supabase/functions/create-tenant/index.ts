@@ -4,7 +4,6 @@ import { corsHeaders } from '../_shared/cors.ts'
 interface TenantData {
   full_name: string
   email: string
-  password: string
   property_id: string
   lease_start_date: string
   lease_end_date: string
@@ -25,40 +24,57 @@ Deno.serve(async (req) => {
 
     const { tenantData } = await req.json() as { tenantData: TenantData }
     
-    // Create auth user for tenant
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: tenantData.email,
-      password: tenantData.password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: tenantData.full_name,
-        role: 'tenant'
-      }
-    })
-
-    if (authError) throw authError
-    if (!authData.user) throw new Error('Failed to create auth user')
-
-    // Create profile if it doesn't exist
-    const { error: profileError } = await supabase
+    // First, check if a user with this email already exists
+    const { data: existingUsers, error: userCheckError } = await supabase
       .from('profiles')
-      .insert({
-        id: authData.user.id,
-        full_name: tenantData.full_name,
-        role: 'tenant'
-      })
-      .select()
+      .select('id')
+      .eq('email', tenantData.email)
       .single()
 
-    if (profileError && profileError.code !== '23505') { // Ignore duplicate key error
-      throw profileError
+    if (userCheckError && userCheckError.code !== 'PGRST116') { // PGRST116 means no rows found
+      throw userCheckError
+    }
+
+    let userId: string
+
+    if (existingUsers) {
+      // If user exists, use their ID
+      userId = existingUsers.id
+      console.log('Using existing user:', userId)
+    } else {
+      // Create auth user for tenant if they don't exist
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: tenantData.email,
+        email_confirm: true,
+        user_metadata: {
+          full_name: tenantData.full_name,
+          role: 'tenant'
+        }
+      })
+
+      if (authError) throw authError
+      if (!authData.user) throw new Error('Failed to create auth user')
+
+      userId = authData.user.id
+      console.log('Created new user:', userId)
+
+      // Create profile for new user
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          full_name: tenantData.full_name,
+          role: 'tenant'
+        })
+
+      if (profileError) throw profileError
     }
 
     // Create tenant record
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        profile_id: authData.user.id,
+        profile_id: userId,
         property_id: tenantData.property_id,
         lease_start_date: tenantData.lease_start_date,
         lease_end_date: tenantData.lease_end_date,
@@ -74,6 +90,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
+    console.error('Error in create-tenant function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
