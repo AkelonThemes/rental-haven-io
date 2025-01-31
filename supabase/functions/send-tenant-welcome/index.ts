@@ -44,8 +44,8 @@ serve(async (req) => {
     let actionLink: string;
 
     if (existingUser) {
-      // For existing users, generate a magic link
-      const { data: { user }, error: magicLinkError } = await supabase.auth.admin.generateLink({
+      console.log('Existing user found, generating magic link...');
+      const { data, error: magicLinkError } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: tenantEmail,
         options: {
@@ -54,13 +54,13 @@ serve(async (req) => {
       });
 
       if (magicLinkError) throw magicLinkError;
-      if (!user?.confirmation_sent_at) throw new Error('No magic link generated');
+      if (!data?.properties?.action_link) throw new Error('Magic link generation failed');
       
-      actionLink = user.action_link || '';
-      console.log('Generated magic link for existing user');
+      actionLink = data.properties.action_link;
+      console.log('Magic link generated successfully');
     } else {
-      // For new users, generate a signup link
-      const { data: { user }, error: signupError } = await supabase.auth.admin.generateLink({
+      console.log('New user, generating signup link...');
+      const { data, error: signupError } = await supabase.auth.admin.generateLink({
         type: 'signup',
         email: tenantEmail,
         options: {
@@ -73,12 +73,13 @@ serve(async (req) => {
       });
 
       if (signupError) throw signupError;
-      if (!user?.action_link) throw new Error('No signup link generated');
+      if (!data?.properties?.action_link) throw new Error('Signup link generation failed');
       
-      actionLink = user.action_link;
-      console.log('Generated signup link for new user');
+      actionLink = data.properties.action_link;
+      console.log('Signup link generated successfully');
     }
 
+    console.log('Sending email with action link...');
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
       to: [tenantEmail],
