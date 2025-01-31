@@ -39,9 +39,9 @@ serve(async (req) => {
     console.log(`Original tenant email: ${tenantEmail}`);
     console.log(`Using test email: ${testEmail} for development`);
 
-    // Get the request origin for redirect URL
-    const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
-    console.log('Using redirect URL:', `${origin}/auth`);
+    // Set the redirect URL for the production environment
+    const redirectUrl = 'https://rental-haven-io.lovable.app/auth';
+    console.log('Using redirect URL:', redirectUrl);
 
     // First, check if user exists
     console.log('Checking for existing user...');
@@ -108,7 +108,7 @@ serve(async (req) => {
       type: 'recovery',
       email: tenantEmail,
       options: {
-        redirectTo: `${origin}/auth`
+        redirectTo: redirectUrl
       }
     });
 
