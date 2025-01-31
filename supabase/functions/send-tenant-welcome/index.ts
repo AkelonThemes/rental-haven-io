@@ -34,69 +34,19 @@ serve(async (req) => {
     console.log('Starting welcome email process...');
     const { tenantEmail, tenantName, propertyAddress }: WelcomeEmailRequest = await req.json();
 
-    // For testing, override the recipient email with your email
-    const testEmail = 'akelonthemes@gmail.com';
-    console.log(`Original tenant email: ${tenantEmail}`);
-    console.log(`Using test email: ${testEmail} for development`);
+    // Generate a signup link
+    const { data, error: signupError } = await supabase.auth.admin.generateLink({
+      type: 'signup',
+      email: tenantEmail,
+      options: {
+        redirectTo: 'https://rental-haven-io.lovable.app/auth'
+      }
+    });
 
-    // Set the redirect URL for the production environment
-    const redirectUrl = 'https://rental-haven-io.lovable.app/auth';
-    console.log('Using redirect URL:', redirectUrl);
-
-    // First, check if user exists
-    console.log('Checking for existing user...');
-    const { data: { users } } = await supabase.auth.admin.listUsers();
-    const existingUser = users?.find(user => user.email === tenantEmail);
-
-    let actionLink: string;
+    if (signupError) throw signupError;
     
-    if (existingUser) {
-      console.log('Found existing user, generating password reset link...');
-      
-      // Generate password reset link for existing user
-      const { data, error: resetError } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: tenantEmail,
-        options: {
-          redirectTo: redirectUrl
-        }
-      });
-
-      if (resetError) throw resetError;
-      actionLink = data.properties.action_link;
-
-      console.log('Generated magic link for existing user');
-    } else {
-      console.log('No existing user found, creating new account...');
-      
-      // Create user with a random password
-      const tempPassword = crypto.randomUUID();
-      const { data: signupData, error: signupError } = await supabase.auth.admin.createUser({
-        email: tenantEmail,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: tenantName,
-          role: 'tenant'
-        }
-      });
-
-      if (signupError) throw signupError;
-
-      // Generate magic link for the new user
-      const { data, error: resetError } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: tenantEmail,
-        options: {
-          redirectTo: redirectUrl
-        }
-      });
-
-      if (resetError) throw resetError;
-      actionLink = data.properties.action_link;
-
-      console.log('Created new user and generated magic link');
-    }
+    const signupLink = data.properties.action_link;
+    console.log('Generated signup link:', signupLink);
 
     const emailContent = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -104,10 +54,10 @@ serve(async (req) => {
         <p>Hello ${tenantName},</p>
         <p>Your landlord has invited you to access your tenant account for the property at:</p>
         <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
-        <p>To access your account, please click the button below:</p>
-        <a href="${actionLink}" 
+        <p>To create your account and access the tenant portal, please click the button below:</p>
+        <a href="${signupLink}" 
            style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 16px;">
-          Access Your Account
+          Create Your Account
         </a>
         <p style="margin-top: 24px; color: #666; font-size: 14px;">
           This link will expire in 24 hours. If you have any questions, please contact your property manager.
@@ -119,8 +69,8 @@ serve(async (req) => {
     
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
-      to: [testEmail], // Using test email instead of actual tenant email
-      subject: 'Welcome to PropManager - Access Your Account',
+      to: [tenantEmail],
+      subject: 'Welcome to PropManager - Create Your Account',
       html: emailContent,
     });
 
