@@ -18,37 +18,38 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Clear any existing sessions on mount
-    const clearSession = async () => {
+    const initAuth = async () => {
+      // Always sign out first to ensure a clean state
       await supabase.auth.signOut();
       
-      // If there's a token in the URL, this is likely a tenant signup
       const token = searchParams.get('token');
       if (token) {
         setIsSignUp(true);
         try {
-          // Get the email from the token
-          const { data: { user }, error } = await supabase.auth.getUser(token);
-          if (error) throw error;
-          if (user?.email) {
-            setEmail(user.email);
+          // Instead of getting user from token, decode the token to get the email
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+          if (tokenPayload.email) {
+            setEmail(tokenPayload.email);
           }
         } catch (error: any) {
-          console.error('Error getting user from token:', error);
+          console.error('Error processing token:', error);
+          toast({
+            title: "Error",
+            description: "Invalid invitation link. Please contact support.",
+            variant: "destructive",
+          });
         }
       } else {
-        // Check if there's an existing session
-        const checkSession = async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            navigate("/");
-          }
-        };
-        checkSession();
+        // For non-tenant flows, check if there's an existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate("/");
+        }
       }
     };
-    clearSession();
-  }, [navigate, searchParams]);
+
+    initAuth();
+  }, [navigate, searchParams, toast]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +57,7 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
+        // For tenant signups, we use signUp instead of signInWithPassword
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -78,7 +80,6 @@ const Auth = () => {
             description: "We sent you a confirmation link to complete your registration.",
           });
         }
-
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
