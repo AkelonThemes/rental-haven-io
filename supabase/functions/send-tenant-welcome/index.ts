@@ -36,75 +36,50 @@ serve(async (req) => {
 
     console.log(`Sending welcome email to ${tenantEmail} for property at ${propertyAddress}`);
 
-    // Check if user already exists
-    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
-    if (getUserError) throw getUserError;
-
-    const existingUser = users.find(user => user.email === tenantEmail);
-    let actionLink: string;
-
     // Get the request origin for redirect URL
     const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
     console.log('Using redirect URL:', `${origin}/auth`);
 
-    if (existingUser) {
-      console.log('Existing user found, generating magic link...');
-      const { data, error: magicLinkError } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: tenantEmail,
-        options: {
-          redirectTo: `${origin}/auth`
-        }
-      });
+    // Generate signup link for the new tenant
+    const { data, error: signupError } = await supabase.auth.admin.generateLink({
+      type: 'signup',
+      email: tenantEmail,
+      options: {
+        data: {
+          full_name: tenantName,
+          role: 'tenant'
+        },
+        redirectTo: `${origin}/auth`
+      }
+    });
 
-      if (magicLinkError) throw magicLinkError;
-      if (!data?.properties?.action_link) throw new Error('Magic link generation failed');
-      
-      actionLink = data.properties.action_link;
-      console.log('Magic link generated successfully');
-    } else {
-      console.log('New user, generating signup link...');
-      const { data, error: signupError } = await supabase.auth.admin.generateLink({
-        type: 'signup',
-        email: tenantEmail,
-        options: {
-          data: {
-            full_name: tenantName,
-            role: 'tenant'
-          },
-          redirectTo: `${origin}/auth`
-        }
-      });
-
-      if (signupError) throw signupError;
-      if (!data?.properties?.action_link) throw new Error('Signup link generation failed');
-      
-      actionLink = data.properties.action_link;
-      console.log('Signup link generated successfully');
-    }
+    if (signupError) throw signupError;
+    if (!data?.properties?.action_link) throw new Error('No signup link generated');
+    
+    const actionLink = data.properties.action_link;
+    console.log('Signup link generated successfully');
 
     // In test mode, we'll send the email to the Resend account email
-    // This is temporary until a domain is verified
     const testModeEmail = 'akelonthemes@gmail.com';
     
-    console.log('Sending email with action link...');
+    console.log('Sending invitation email...');
     console.log('Using test mode - sending to:', testModeEmail);
     
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
       to: [testModeEmail], // Use test mode email
-      subject: existingUser ? 'Welcome Back to PropManager' : 'Welcome to PropManager - Complete Your Account Setup',
+      subject: 'Welcome to PropManager - Complete Your Account Setup',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #333;">Welcome ${existingUser ? 'Back ' : ''}to PropManager!</h1>
+          <h1 style="color: #333;">Welcome to PropManager!</h1>
           <p>Hello ${tenantName},</p>
           <p>This is a test mode email. In production, this would be sent to: ${tenantEmail}</p>
-          <p>${existingUser ? 'Your landlord has added you' : 'Your account has been created'} in PropManager for the property at:</p>
+          <p>Your landlord has invited you to join PropManager for the property at:</p>
           <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${propertyAddress}</p>
-          <p>${existingUser ? 'To access your tenant portal, please click the button below:' : 'To complete your account setup and access your tenant portal, please click the button below:'}</p>
+          <p>To create your tenant account and access your portal, please click the button below:</p>
           <a href="${actionLink}" 
              style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 16px;">
-            ${existingUser ? 'Access Tenant Portal' : 'Complete Account Setup'}
+            Create Your Account
           </a>
           <p style="margin-top: 24px; color: #666; font-size: 14px;">
             This link will expire in 24 hours. If you have any questions, please contact your property manager.
