@@ -24,34 +24,42 @@ Deno.serve(async (req) => {
 
     const { tenantData } = await req.json() as { tenantData: TenantData }
     
-    console.log('Creating tenant profile for:', tenantData.email)
+    console.log('Creating auth user for:', tenantData.email)
     
-    // Generate a UUID for the profile
-    const profileId = crypto.randomUUID()
-    
-    // First create a profile without auth
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: profileId,
+    // First create the auth user with a random password
+    const tempPassword = crypto.randomUUID()
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: tenantData.email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
         full_name: tenantData.full_name,
         role: 'tenant'
-      })
-      .select()
-      .single()
+      }
+    })
 
-    if (profileError) {
-      console.error('Error creating profile:', profileError)
-      throw profileError
+    if (authError) {
+      console.error('Error creating auth user:', authError)
+      throw authError
     }
 
-    console.log('Created profile:', profileId)
+    if (!authUser.user) {
+      throw new Error('No user returned from auth creation')
+    }
+
+    console.log('Created auth user:', authUser.user.id)
+
+    // The profile will be created automatically by the handle_new_user trigger
+    // Wait a moment for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    console.log('Creating tenant record')
 
     // Create tenant record with the new profile ID
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        profile_id: profileId,
+        profile_id: authUser.user.id,
         property_id: tenantData.property_id,
         lease_start_date: tenantData.lease_start_date,
         lease_end_date: tenantData.lease_end_date,
@@ -64,10 +72,22 @@ Deno.serve(async (req) => {
       throw tenantError
     }
 
+    // Generate a password reset link for the user
+    const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: tenantData.email,
+    })
+
+    if (resetError) {
+      console.error('Error generating reset link:', resetError)
+      throw resetError
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        profileId: profileId 
+        userId: authUser.user.id,
+        resetLink: resetData
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
