@@ -67,6 +67,10 @@ export function AddTenantDialog() {
 
       console.log('Current user (landlord) session:', session.user.id);
 
+      // Get property address for email
+      const property = properties.find(p => p.id === values.property_id);
+      if (!property) throw new Error('Property not found');
+
       // Call the Edge Function to create tenant
       const { data: functionData, error: functionError } = await supabase.functions.invoke('create-tenant', {
         body: {
@@ -80,6 +84,25 @@ export function AddTenantDialog() {
       if (functionError) throw functionError;
       if (!functionData) throw new Error('No response from function');
 
+      // Send welcome email
+      const { error: emailError } = await supabase.functions.invoke('send-tenant-welcome', {
+        body: {
+          tenantEmail: values.email,
+          tenantName: values.full_name,
+          propertyAddress: property.address,
+          password: values.password
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending welcome email:', emailError);
+        toast({
+          title: "Tenant created but email failed",
+          description: "The tenant was created successfully but we couldn't send the welcome email.",
+          variant: "destructive",
+        });
+      }
+
       // Invalidate queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
@@ -87,7 +110,7 @@ export function AddTenantDialog() {
       setOpen(false);
       toast({
         title: "Success",
-        description: "Tenant added successfully",
+        description: "Tenant added successfully and welcome email sent",
       });
     } catch (error: any) {
       console.error('Error in tenant creation:', error);
