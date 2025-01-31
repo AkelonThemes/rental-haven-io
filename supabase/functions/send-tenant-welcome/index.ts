@@ -16,26 +16,51 @@ Deno.serve(async (req) => {
 
     console.log('Sending welcome email to:', tenantEmail)
 
-    // Generate a temporary password
-    const tempPassword = crypto.randomUUID().slice(0, 12)
-
-    // Create the auth user with the temporary password
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: tenantEmail,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: {
-        full_name: tenantName,
-        role: 'tenant'
-      }
-    })
-
-    if (authError) {
-      console.error('Error creating auth user:', authError)
-      throw authError
+    // Check if user already exists
+    const { data: existingUser, error: lookupError } = await supabase.auth.admin.getUserByEmail(tenantEmail)
+    
+    if (lookupError) {
+      console.error('Error looking up user:', lookupError)
+      throw lookupError
     }
 
-    console.log('Created auth user:', authUser.user?.id)
+    let tempPassword = ''
+    if (!existingUser) {
+      // Generate a temporary password only for new users
+      tempPassword = crypto.randomUUID().slice(0, 12)
+
+      // Create the auth user with the temporary password
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        email: tenantEmail,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: tenantName,
+          role: 'tenant'
+        }
+      })
+
+      if (authError) {
+        console.error('Error creating auth user:', authError)
+        throw authError
+      }
+
+      console.log('Created new auth user:', authUser.user?.id)
+    } else {
+      console.log('User already exists:', existingUser.user.id)
+      // For existing users, we'll generate a password reset link
+      const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email: tenantEmail,
+      })
+
+      if (resetError) {
+        console.error('Error generating reset link:', resetError)
+        throw resetError
+      }
+
+      tempPassword = 'A password reset link has been sent to your email'
+    }
 
     // Create a simple base64 encoded token with the email
     const token = btoa(JSON.stringify({ email: tenantEmail }))
@@ -61,11 +86,15 @@ Deno.serve(async (req) => {
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
+          ${!existingUser ? `
           <p>Here are your temporary login credentials:</p>
           <ul>
             <li><strong>Email:</strong> ${tenantEmail}</li>
             <li><strong>Temporary Password:</strong> ${tempPassword}</li>
           </ul>
+          ` : `
+          <p>Since you already have an account, we've sent a password reset link to your email address.</p>
+          `}
           <p>Please use these credentials to log in at the link below:</p>
           <p><a href="${signUpLink}">Access Your Account</a></p>
           <p><strong>Important:</strong> For security reasons, please change your password after your first login.</p>
