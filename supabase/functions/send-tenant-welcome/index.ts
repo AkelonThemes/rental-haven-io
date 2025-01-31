@@ -34,7 +34,10 @@ serve(async (req) => {
     console.log('Starting welcome email process...');
     const { tenantEmail, tenantName, propertyAddress }: WelcomeEmailRequest = await req.json();
 
-    console.log(`Sending welcome email to ${tenantEmail} for property at ${propertyAddress}`);
+    // For testing, override the recipient email with your email
+    const testEmail = 'nlakaa1hirecars@gmail.com';
+    console.log(`Original tenant email: ${tenantEmail}`);
+    console.log(`Using test email: ${testEmail} for development`);
 
     // Get the request origin for redirect URL
     const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
@@ -115,7 +118,7 @@ serve(async (req) => {
     
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'PropManager <onboarding@resend.dev>',
-      to: [tenantEmail],
+      to: [testEmail], // Using test email instead of actual tenant email
       subject: userExists ? 'Access Your Tenant Portal - PropManager' : 'Welcome to PropManager - Create Your Account',
       html: emailContent,
     });
