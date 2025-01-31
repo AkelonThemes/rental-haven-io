@@ -61,82 +61,33 @@ export function AddTenantDialog() {
     try {
       console.log('Starting tenant creation process...');
       
-      // Store the current session before making any auth changes
-      const { data: currentSession } = await supabase.auth.getSession();
-      if (!currentSession?.session?.user) throw new Error('Not authenticated');
-      const landlordSession = currentSession.session;
+      // Get current session for landlord ID
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Not authenticated');
 
-      console.log('Current user (landlord) session:', landlordSession.user.id);
+      console.log('Current user (landlord) session:', session.user.id);
 
-      // 1. Create auth user for tenant using admin API to avoid auto-login
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: values.email,
-        password: values.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: values.full_name,
-          role: 'tenant'
-        }
+      // Call the Edge Function to create tenant
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-tenant`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tenantData: {
+            ...values,
+            created_by: session.user.id
+          }
+        })
       });
 
-      if (authError) {
-        console.error('Auth creation error:', authError);
-        throw authError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create tenant');
       }
 
-      if (!authData.user) {
-        throw new Error('Failed to create auth user');
-      }
-
-      console.log('Tenant auth account created:', authData.user.id);
-
-      // 2. Check if profile exists first
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', authData.user.id)
-        .single();
-
-      // Only create profile if it doesn't exist
-      if (!existingProfile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            full_name: values.full_name,
-            role: 'tenant'
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          throw profileError;
-        }
-
-        console.log('Tenant profile created');
-      } else {
-        console.log('Profile already exists, skipping creation');
-      }
-
-      // 3. Create tenant record with created_by field
-      const { error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          profile_id: authData.user.id,
-          property_id: values.property_id,
-          lease_start_date: values.lease_start_date,
-          lease_end_date: values.lease_end_date,
-          rent_amount: parseFloat(values.rent_amount),
-          created_by: landlordSession.user.id
-        });
-
-      if (tenantError) {
-        console.error('Tenant record creation error:', tenantError);
-        throw tenantError;
-      }
-
-      console.log('Tenant record created');
-
-      // Invalidate both tenants and dashboard stats queries to update UI
+      // Invalidate queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       
