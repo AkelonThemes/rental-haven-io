@@ -135,7 +135,7 @@ const Tenants = () => {
                   <TableCell>
                     {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-right">${tenant.rent_amount}/month</TableCell>
+                  <TableCell className="text-right">K{tenant.rent_amount}/month</TableCell>
                 </TableRow>
               ))}
             </TableBody>
