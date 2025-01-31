@@ -14,15 +14,24 @@ const Dashboard = () => {
     queryFn: async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Not authenticated');
+        if (!session) {
+          console.error('No session found');
+          throw new Error('Not authenticated');
+        }
 
+        console.log('Fetching properties for user:', session.user.id);
         // Get properties owned by the user
         const { data: properties, error: propertyError } = await supabase
           .from('properties')
           .select('*')
           .eq('owner_id', session.user.id);
 
-        if (propertyError) throw propertyError;
+        if (propertyError) {
+          console.error('Property fetch error:', propertyError);
+          throw propertyError;
+        }
+
+        console.log('Properties fetched:', properties);
 
         // Get tenants for the user's properties
         const { data: tenants, error: tenantError } = await supabase
@@ -33,7 +42,12 @@ const Dashboard = () => {
           `)
           .eq('properties.owner_id', session.user.id);
 
-        if (tenantError) throw tenantError;
+        if (tenantError) {
+          console.error('Tenant fetch error:', tenantError);
+          throw tenantError;
+        }
+
+        console.log('Tenants fetched:', tenants);
 
         // Calculate statistics
         const propertyCount = properties?.length || 0;
@@ -48,6 +62,7 @@ const Dashboard = () => {
           tenants
         };
       } catch (error: any) {
+        console.error('Dashboard data fetch error:', error);
         toast({
           title: "Error fetching dashboard data",
           description: error.message,
@@ -56,11 +71,10 @@ const Dashboard = () => {
         throw error;
       }
     },
-    refetchOnWindowFocus: false,
-    staleTime: 30000,
   });
 
   if (error) {
+    console.error('Dashboard render error:', error);
     return (
       <DashboardLayout>
         <div className="text-center py-8">
