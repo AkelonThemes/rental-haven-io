@@ -43,18 +43,46 @@ serve(async (req) => {
     const origin = req.headers.get('origin') || 'https://0efd91fa-06c8-448c-841b-4fc627382398.lovableproject.com';
     console.log('Using redirect URL:', `${origin}/auth`);
 
-    // First, delete the user if they exist
+    // First, check if user exists
     console.log('Checking for existing user...');
     const { data: users } = await supabase.auth.admin.listUsers();
     const existingUser = users?.users.find(user => user.email === tenantEmail);
     
     if (existingUser) {
-      console.log('Found existing user, deleting...');
+      console.log('Found existing user, cleaning up associated data...');
+      
+      // Delete associated tenant records
+      const { error: tenantDeleteError } = await supabase
+        .from('tenants')
+        .delete()
+        .eq('profile_id', existingUser.id);
+      
+      if (tenantDeleteError) {
+        console.error('Error deleting tenant records:', tenantDeleteError);
+      }
+      
+      // Delete associated profile
+      const { error: profileDeleteError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', existingUser.id);
+      
+      if (profileDeleteError) {
+        console.error('Error deleting profile:', profileDeleteError);
+      }
+      
+      // Finally delete the user
+      console.log('Deleting user account...');
       const { error: deleteError } = await supabase.auth.admin.deleteUser(
         existingUser.id
       );
-      if (deleteError) throw deleteError;
-      console.log('Existing user deleted successfully');
+      
+      if (deleteError) {
+        console.error('Error deleting user:', deleteError);
+        throw deleteError;
+      }
+      
+      console.log('Existing user and associated data deleted successfully');
     }
 
     // Now generate a new signup link
