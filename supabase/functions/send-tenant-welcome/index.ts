@@ -16,18 +16,6 @@ Deno.serve(async (req) => {
 
     console.log('Sending welcome email to:', tenantEmail)
 
-    // Get user by email using the correct method
-    const { data: users, error: userError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', tenantEmail)
-      .single()
-    
-    if (userError) {
-      console.error('Error getting user:', userError)
-      throw userError
-    }
-
     // Generate a magic link for the user
     const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.inviteUserByEmail(tenantEmail, {
       redirectTo: 'https://rental-haven-io.lovable.app/auth'
