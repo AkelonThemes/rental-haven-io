@@ -14,7 +14,7 @@ import { UserPlus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface AddTenantDialogProps {
-  propertyId: string;
+  propertyId?: string;
 }
 
 const formSchema = z.object({
@@ -36,7 +36,7 @@ export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
     defaultValues: {
       full_name: "",
       email: "",
-      property_id: propertyId,
+      property_id: propertyId || "",
       lease_start_date: "",
       lease_end_date: "",
       rent_amount: "",
