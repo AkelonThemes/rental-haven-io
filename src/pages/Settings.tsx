@@ -37,6 +37,7 @@ const Settings = () => {
   const onSubmit = async (data: FormData) => {
     try {
       setLoading(true);
+      console.log('Starting password update process...');
 
       if (data.newPassword !== data.confirmPassword) {
         toast({
@@ -50,6 +51,8 @@ const Settings = () => {
       // Get current user's email
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
+      
+      console.log('Updating password for user:', user.email);
 
       // Update password
       const { error: updateError } = await supabase.auth.updateUser({
@@ -57,21 +60,23 @@ const Settings = () => {
       });
 
       if (updateError) throw updateError;
+      console.log('Password updated successfully');
 
       // Send password change notification email
+      console.log('Sending password change notification email...');
       const { error: emailError } = await supabase.functions.invoke('send-password-changed', {
         body: { userEmail: user.email }
       });
 
       if (emailError) {
         console.error('Error sending password change notification:', emailError);
-        // Don't throw here, as the password was successfully changed
         toast({
           title: "Warning",
           description: "Password updated successfully, but failed to send notification email",
           variant: "default",
         });
       } else {
+        console.log('Password change notification sent successfully');
         toast({
           title: "Success",
           description: "Password updated successfully. A confirmation email has been sent.",
