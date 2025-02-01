@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Receipt, AlertTriangle } from "lucide-react";
+import { Receipt, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Payment {
@@ -12,6 +13,10 @@ interface Payment {
   status: string;
   payment_date: string | null;
   created_at: string;
+  stripe_payment_id: string | null;
+  property: {
+    address: string;
+  } | null;
 }
 
 export default function TenantDashboard() {
@@ -28,9 +33,20 @@ export default function TenantDashboard() {
 
         const { data: payment, error } = await supabase
           .from('payments')
-          .select('id, amount, status, payment_date, created_at')
+          .select(`
+            id,
+            amount,
+            status,
+            payment_date,
+            created_at,
+            stripe_payment_id,
+            property:properties(
+              address
+            )
+          `)
           .eq('payment_type', 'rent')
           .eq('tenant_id', session.user.id)
+          .eq('status', 'pending')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -81,12 +97,9 @@ export default function TenantDashboard() {
             <div className="mt-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium">Rent Payment</p>
+                  <p className="font-medium">Rent Payment - {latestPayment.property?.address}</p>
                   <p className="text-sm text-gray-500">
-                    {latestPayment.payment_date 
-                      ? `Paid on ${new Date(latestPayment.payment_date).toLocaleDateString()}`
-                      : `Created on ${new Date(latestPayment.created_at).toLocaleDateString()}`
-                    }
+                    Created on {new Date(latestPayment.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -104,6 +117,16 @@ export default function TenantDashboard() {
                   <span className="font-semibold">K{latestPayment.amount}</span>
                 </div>
               </div>
+              {latestPayment.status === 'pending' && latestPayment.stripe_payment_id && (
+                <Button
+                  variant="outline"
+                  className="mt-4 w-full"
+                  onClick={() => window.open(`https://checkout.stripe.com/pay/${latestPayment.stripe_payment_id}`, '_blank')}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Pay Now
+                </Button>
+              )}
               <button
                 onClick={() => navigate('/payments')}
                 className="mt-4 text-primary hover:underline text-sm w-full text-center"
@@ -116,7 +139,7 @@ export default function TenantDashboard() {
               <Receipt className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-4 text-lg font-semibold">No payments found</h3>
               <p className="mt-2 text-gray-500">
-                You don't have any rental payments recorded yet.
+                You don't have any pending rental payments at the moment.
               </p>
             </div>
           )}
