@@ -78,8 +78,8 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev',
-        to: tenantEmail, // Send directly to tenant email
+        from: 'Rental Haven <noreply@gukoya.com>',
+        to: tenantEmail,
         subject: 'Welcome to Rental Haven - Your Login Credentials',
         html: `
           <p>Hello ${tenantName},</p>
