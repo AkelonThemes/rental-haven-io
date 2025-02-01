@@ -20,46 +20,17 @@ serve(async (req) => {
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
 
-    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
-    console.log('Webhook secret exists:', !!webhookSecret);
-    console.log('Stripe key exists:', !!stripeKey);
-    console.log('Signature exists:', !!signature);
-
     if (!signature || !webhookSecret || !stripeKey) {
-      console.error('Missing required configuration', {
-        signature_exists: !!signature,
-        webhook_secret_exists: !!webhookSecret,
-        stripe_key_exists: !!stripeKey
-      });
-      return new Response(
-        JSON.stringify({ 
-          error: 'Missing required configuration',
-          details: {
-            signature: !!signature,
-            webhook_secret: !!webhookSecret,
-            stripe_key: !!stripeKey
-          }
-        }),
-        { 
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      throw new Error('Missing required configuration');
     }
 
     const stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2023-10-16',
     });
 
     const body = await req.text();
-    
-    console.log('Received webhook request', {
-      signature_exists: !!signature,
-      body_length: body.length,
-      webhook_secret_exists: !!webhookSecret
-    });
-
     let event;
+
     try {
       event = await stripe.webhooks.constructEventAsync(
         body,
@@ -68,13 +39,7 @@ serve(async (req) => {
       );
     } catch (err) {
       console.error('Webhook signature verification failed:', err.message);
-      return new Response(
-        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
-        { 
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      throw err;
     }
 
     const supabaseClient = createClient(
@@ -82,105 +47,85 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    console.log('Received Stripe event:', event.type);
+    console.log('Processing webhook event:', event.type);
 
     switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-        const customerId = session.customer as string;
-        const userId = subscription.metadata.user_id;
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object;
+        const paymentId = paymentIntent.metadata.payment_id;
 
-        console.log('Processing completed checkout session:', {
-          session_id: session.id,
-          customer_id: customerId,
-          user_id: userId
-        });
-
-        // Get the plan type from the subscription items
-        const planType = subscription.items.data[0]?.price?.nickname || 'pro';
-
-        // Update subscription in database
+        // Update payment status
         const { error: updateError } = await supabaseClient
-          .from('subscriptions')
-          .upsert({
-            profile_id: userId,
-            stripe_subscription_id: subscription.id,
-            stripe_customer_id: customerId,
-            plan_type: planType,
-            status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          });
-
-        if (updateError) {
-          console.error('Error updating subscription:', updateError);
-          throw updateError;
-        }
-
-        // Create payment record
-        const { error: paymentError } = await supabaseClient
           .from('payments')
-          .insert({
-            amount: session.amount_total ? session.amount_total / 100 : 0,
-            payment_type: 'subscription',
+          .update({
             status: 'completed',
-            stripe_payment_id: session.payment_intent as string,
-            payer_profile_id: userId,
-          });
+            payment_date: new Date().toISOString(),
+          })
+          .eq('id', paymentId);
 
-        if (paymentError) {
-          console.error('Error creating payment record:', paymentError);
-          throw paymentError;
-        }
+        if (updateError) throw updateError;
         break;
       }
 
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object;
-        const userId = subscription.metadata.user_id;
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object;
+        const paymentId = paymentIntent.metadata.payment_id;
 
-        console.log('Processing subscription update:', {
-          subscription_id: subscription.id,
-          user_id: userId,
-          status: subscription.status
-        });
+        // Update payment status
+        const { error: updateError } = await supabaseClient
+          .from('payments')
+          .update({
+            status: 'failed',
+          })
+          .eq('id', paymentId);
 
-        // Get the plan type from the subscription items or use the existing one
-        const planType = subscription.items?.data[0]?.price?.nickname || 'pro';
+        if (updateError) throw updateError;
+        break;
+      }
 
-        const { error } = await supabaseClient
-          .from('subscriptions')
-          .upsert({
-            profile_id: userId,
-            stripe_subscription_id: subscription.id,
-            stripe_customer_id: subscription.customer as string,
-            status: subscription.status,
-            plan_type: planType, // Include plan_type in the update
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          });
+      case 'transfer.paid': {
+        const transfer = event.data.object;
+        const paymentId = transfer.metadata.payment_id;
 
-        if (error) {
-          console.error('Error updating subscription:', error);
-          throw error;
-        }
+        // Update transfer status
+        const { error: updateError } = await supabaseClient
+          .from('payments')
+          .update({
+            transfer_status: 'completed',
+            stripe_transfer_id: transfer.id,
+          })
+          .eq('id', paymentId);
+
+        if (updateError) throw updateError;
+        break;
+      }
+
+      case 'transfer.failed': {
+        const transfer = event.data.object;
+        const paymentId = transfer.metadata.payment_id;
+
+        // Update transfer status
+        const { error: updateError } = await supabaseClient
+          .from('payments')
+          .update({
+            transfer_status: 'failed',
+            stripe_transfer_id: transfer.id,
+          })
+          .eq('id', paymentId);
+
+        if (updateError) throw updateError;
         break;
       }
     }
 
+    return new Response(JSON.stringify({ received: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
     return new Response(
-      JSON.stringify({ received: true }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (err) {
-    console.error('Error processing webhook:', err);
-    return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
