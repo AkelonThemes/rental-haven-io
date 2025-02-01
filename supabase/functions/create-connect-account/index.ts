@@ -30,8 +30,11 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
+      console.error('Auth error:', userError);
       throw new Error('Unauthorized');
     }
+
+    console.log('Creating Stripe Connect account for user:', user.id);
 
     // Create a Stripe Connect account
     const account = await stripe.accounts.create({
@@ -46,8 +49,9 @@ serve(async (req) => {
 
     console.log('Created Stripe Connect account:', account.id);
 
-    // Get the origin with protocol
-    const origin = req.headers.get('origin') || 'http://localhost:5173';
+    // Get the full origin URL with protocol
+    const origin = new URL(req.url).origin;
+    console.log('Using origin URL:', origin);
 
     // Create an account link for onboarding
     const accountLink = await stripe.accountLinks.create({
@@ -56,6 +60,8 @@ serve(async (req) => {
       return_url: `${origin}/account?success=true`,
       type: 'account_onboarding',
     });
+
+    console.log('Created account link:', accountLink.url);
 
     // Update the user's profile with the Connect account ID
     const { error: updateError } = await supabaseClient
@@ -67,9 +73,11 @@ serve(async (req) => {
       .eq('id', user.id);
 
     if (updateError) {
+      console.error('Profile update error:', updateError);
       throw updateError;
     }
 
+    console.log('Successfully updated profile with Connect account ID');
     console.log('Redirecting to account link URL:', accountLink.url);
     
     return new Response(
