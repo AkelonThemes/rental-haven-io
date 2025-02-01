@@ -1,24 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { CreditCard } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { ProfileDetails } from "@/components/account/ProfileDetails";
-import { SubscriptionDetails } from "@/components/account/SubscriptionDetails";
 import { ConnectAccountSetup } from "@/components/account/ConnectAccountSetup";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
-import { PaymentList } from "@/components/payments/PaymentList";
+import { SubscriptionSection } from "@/components/account/SubscriptionSection";
+import { PaymentSection } from "@/components/account/PaymentSection";
 
 const Account = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get('session_id');
 
-  // Fetch profile data with automatic refetching
   const { data: profile, isLoading: isLoadingProfile, refetch: refetchProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -48,98 +39,13 @@ const Account = () => {
     retry: false,
   });
 
-  const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
-    queryKey: ["subscription", sessionId], // Add sessionId to trigger refetch
-    queryFn: async () => {
-      if (!profile?.id) return null;
-
-      console.log('Fetching subscription for profile:', profile.id);
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("profile_id", profile.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Subscription error:', error);
-        throw error;
-      }
-
-      console.log('Subscription data:', data);
-      return data;
-    },
-    enabled: !!profile?.id,
-    refetchInterval: sessionId ? 1000 : false, // Poll every second if we have a session_id
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  });
-
-  const handleUpgradeClick = async () => {
-    try {
-      if (subscription?.status === 'active') {
-        toast({
-          title: "Subscription Active",
-          description: "You already have an active subscription. Please manage your subscription from the billing portal.",
-          variant: "default",
-        });
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        method: 'POST',
-      });
-      
-      if (error) {
-        console.error('Error creating checkout session:', error);
-        toast({
-          title: "Error",
-          description: "Failed to start checkout process. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No checkout URL returned");
-      }
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start checkout process. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Add payment history query
-  const { data: payments, isLoading: isLoadingPayments } = useQuery({
-    queryKey: ['payments'],
-    queryFn: async () => {
-      if (!profile?.id) return null;
-
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          property:properties(*)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5); // Only show the 5 most recent payments
-
-      if (error) {
-        console.error('Error fetching payments:', error);
-        throw error;
-      }
-
-      return data;
-    },
-    enabled: !!profile?.id,
-  });
+  if (isLoadingProfile) {
+    return (
+      <DashboardLayout>
+        <div>Loading...</div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -156,29 +62,8 @@ const Account = () => {
           {profile?.role === 'landlord' && (
             <ConnectAccountSetup profile={profile} refetchProfile={refetchProfile} />
           )}
-          <SubscriptionDetails
-            subscription={subscription}
-            isLoading={isLoadingSubscription || isLoadingProfile}
-            onUpgradeClick={handleUpgradeClick}
-          />
-
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Payment History</h2>
-            <div className="space-y-4">
-              <PaymentList 
-                payments={payments} 
-                isLoading={isLoadingPayments} 
-              />
-              <Button
-                variant="outline"
-                onClick={() => navigate("/payments")}
-                className="mt-4"
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                View All Payments
-              </Button>
-            </div>
-          </Card>
+          <SubscriptionSection profile={profile} />
+          <PaymentSection profile={profile} />
         </div>
       </div>
     </DashboardLayout>
