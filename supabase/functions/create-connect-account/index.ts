@@ -49,6 +49,23 @@ serve(async (req) => {
 
     console.log('Created Stripe Connect account:', account.id);
 
+    // Update the user's profile with the Connect account ID
+    const { error: updateError } = await supabaseClient
+      .from('profiles')
+      .update({
+        stripe_connect_id: account.id,
+        stripe_connect_status: 'pending',
+        stripe_connect_onboarding_completed: false,
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Profile update error:', updateError);
+      throw updateError;
+    }
+
+    console.log('Successfully updated profile with Connect account ID');
+
     // Get the origin URL from the request headers
     const origin = req.headers.get('origin');
     if (!origin) {
@@ -65,22 +82,6 @@ serve(async (req) => {
     });
 
     console.log('Created account link:', accountLink.url);
-
-    // Update the user's profile with the Connect account ID
-    const { error: updateError } = await supabaseClient
-      .from('profiles')
-      .update({
-        stripe_connect_id: account.id,
-        stripe_connect_status: 'pending',
-      })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('Profile update error:', updateError);
-      throw updateError;
-    }
-
-    console.log('Successfully updated profile with Connect account ID');
     console.log('Redirecting to account link URL:', accountLink.url);
     
     return new Response(
