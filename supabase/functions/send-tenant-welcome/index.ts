@@ -12,63 +12,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { tenantEmail, tenantName, propertyAddress } = await req.json()
+    const { tenantEmail, tenantName, propertyAddress, password } = await req.json()
 
     console.log('Sending welcome email to:', tenantEmail)
-
-    // Check if user already exists by listing users and filtering
-    const { data: users, error: lookupError } = await supabase.auth.admin.listUsers()
-    
-    if (lookupError) {
-      console.error('Error looking up users:', lookupError)
-      throw lookupError
-    }
-
-    const existingUser = users.users.find(user => user.email === tenantEmail)
-    let tempPassword = ''
-
-    if (!existingUser) {
-      // Generate a temporary password only for new users
-      tempPassword = crypto.randomUUID().slice(0, 12)
-
-      // Create the auth user with the temporary password
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: tenantEmail,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: tenantName,
-          role: 'tenant'
-        }
-      })
-
-      if (authError) {
-        console.error('Error creating auth user:', authError)
-        throw authError
-      }
-
-      console.log('Created new auth user:', authUser.user?.id)
-    } else {
-      console.log('User already exists:', existingUser.id)
-      // For existing users, we'll generate a password reset link
-      const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
-        type: 'recovery',
-        email: tenantEmail,
-      })
-
-      if (resetError) {
-        console.error('Error generating reset link:', resetError)
-        throw resetError
-      }
-
-      tempPassword = 'A password reset link has been sent to your email'
-    }
-
-    // Create a simple base64 encoded token with the email
-    const token = btoa(JSON.stringify({ email: tenantEmail }))
-    const signInLink = `https://rental-haven-io.lovable.app/auth`
-
-    console.log('Sending email via Resend with link:', signInLink)
 
     // During testing phase, redirect all emails to the verified email
     const testingEmail = 'ensolute@gmail.com'
@@ -92,15 +38,11 @@ Deno.serve(async (req) => {
           <p>Here are your login credentials:</p>
           <ul>
             <li><strong>Email:</strong> ${tenantEmail}</li>
-            <li><strong>Password:</strong> ${tempPassword}</li>
+            <li><strong>Password:</strong> ${password}</li>
           </ul>
           <p>Please use these credentials to log in at:</p>
-          <p><a href="${signInLink}">Sign In to Your Account</a></p>
-          ${!existingUser ? `
+          <p><a href="https://rental-haven-io.lovable.app/auth">Sign In to Your Account</a></p>
           <p><strong>Important:</strong> For security reasons, we recommend changing your password after your first login.</p>
-          ` : `
-          <p>Since you already have an account, we've sent a password reset link to your email address.</p>
-          `}
           <p>Best regards,<br>The Rental Haven Team</p>
         `
       })

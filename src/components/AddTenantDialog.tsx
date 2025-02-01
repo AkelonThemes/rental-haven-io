@@ -59,13 +59,11 @@ export function AddTenantDialog() {
     try {
       console.log('Starting tenant creation process...');
       
-      // Get current session for landlord ID and access token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Not authenticated');
 
       console.log('Current user (landlord) session:', session.user.id);
 
-      // Get property address for email
       const property = properties.find(p => p.id === values.property_id);
       if (!property) throw new Error('Property not found');
 
@@ -85,12 +83,13 @@ export function AddTenantDialog() {
       if (functionError) throw functionError;
       if (!functionData) throw new Error('No response from function');
 
-      // Send welcome email with signup link
+      // Send welcome email with login credentials
       const { error: emailError } = await supabase.functions.invoke('send-tenant-welcome', {
         body: {
           tenantEmail: values.email,
           tenantName: values.full_name,
-          propertyAddress: property.address
+          propertyAddress: property.address,
+          password: functionData.password // Pass the generated password to the email function
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`

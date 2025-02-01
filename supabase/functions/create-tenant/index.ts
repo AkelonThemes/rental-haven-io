@@ -11,6 +11,16 @@ interface TenantData {
   created_by: string
 }
 
+// Function to generate a random 8-character password
+function generatePassword() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+  let password = ''
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return password
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -26,11 +36,13 @@ Deno.serve(async (req) => {
     
     console.log('Creating auth user for:', tenantData.email)
     
-    // First create the auth user with a random password
-    const tempPassword = crypto.randomUUID()
+    // Generate a random password
+    const password = generatePassword()
+    
+    // Create the auth user with the generated password
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: tenantData.email,
-      password: tempPassword,
+      password: password,
       email_confirm: true,
       user_metadata: {
         full_name: tenantData.full_name,
@@ -49,7 +61,6 @@ Deno.serve(async (req) => {
 
     console.log('Created auth user:', authUser.user.id)
 
-    // The profile will be created automatically by the handle_new_user trigger
     // Wait a moment for the trigger to complete
     await new Promise(resolve => setTimeout(resolve, 1000))
 
@@ -72,22 +83,11 @@ Deno.serve(async (req) => {
       throw tenantError
     }
 
-    // Generate a password reset link for the user
-    const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: tenantData.email,
-    })
-
-    if (resetError) {
-      console.error('Error generating reset link:', resetError)
-      throw resetError
-    }
-
     return new Response(
       JSON.stringify({ 
         success: true,
         userId: authUser.user.id,
-        resetLink: resetData
+        password: password // Pass the password to the welcome email function
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
