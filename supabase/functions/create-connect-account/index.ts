@@ -46,11 +46,14 @@ serve(async (req) => {
 
     console.log('Created Stripe Connect account:', account.id);
 
+    // Get the origin with protocol
+    const origin = req.headers.get('origin') || 'http://localhost:5173';
+
     // Create an account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${req.headers.get('origin')}/account?refresh=true`,
-      return_url: `${req.headers.get('origin')}/account?success=true`,
+      refresh_url: `${origin}/account?refresh=true`,
+      return_url: `${origin}/account?success=true`,
       type: 'account_onboarding',
     });
 
@@ -67,6 +70,8 @@ serve(async (req) => {
       throw updateError;
     }
 
+    console.log('Redirecting to account link URL:', accountLink.url);
+    
     return new Response(
       JSON.stringify({ url: accountLink.url }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
