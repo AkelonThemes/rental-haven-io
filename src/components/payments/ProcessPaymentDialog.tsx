@@ -12,7 +12,8 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe("your_publishable_key");
+// Initialize Stripe with the publishable key from Supabase secrets
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 interface ProcessPaymentDialogProps {
   paymentId: string;
@@ -81,7 +82,8 @@ export function ProcessPaymentDialog({ paymentId, amount }: ProcessPaymentDialog
 
   const handlePaymentSetup = async () => {
     try {
-      const { data: { clientSecret }, error } = await supabase.functions.invoke(
+      console.log('Setting up payment for payment ID:', paymentId);
+      const { data, error } = await supabase.functions.invoke(
         'create-tenant-payment',
         {
           body: { payment_id: paymentId },
@@ -89,7 +91,13 @@ export function ProcessPaymentDialog({ paymentId, amount }: ProcessPaymentDialog
       );
 
       if (error) throw error;
-      setClientSecret(clientSecret);
+      
+      console.log('Payment setup response:', data);
+      if (data?.clientSecret) {
+        setClientSecret(data.clientSecret);
+      } else {
+        throw new Error('No client secret received');
+      }
     } catch (error: any) {
       console.error('Error setting up payment:', error);
       toast({

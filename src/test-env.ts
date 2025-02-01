@@ -25,7 +25,7 @@ async function testEnvironmentVariables() {
     if (!stripeKey) throw new Error("Stripe key is missing");
     
     const stripe = new Stripe(stripeKey, {
-      apiVersion: "2025-01-27.acacia",
+      apiVersion: "2023-10-16",
     });
 
     // Test basic Stripe connection
