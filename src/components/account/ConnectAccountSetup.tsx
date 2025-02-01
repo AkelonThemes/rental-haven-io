@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { Wallet, ArrowRight } from "lucide-react";
+import { Wallet, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -48,7 +49,7 @@ export function ConnectAccountSetup({ profile, refetchProfile }: ConnectAccountS
         if (success === 'true') {
           toast({
             title: "Account Connected",
-            description: "Your bank account has been successfully connected.",
+            description: "Your bank account connection has been initiated. Please complete the verification process.",
           });
         }
       }
@@ -94,6 +95,35 @@ export function ConnectAccountSetup({ profile, refetchProfile }: ConnectAccountS
     }
   };
 
+  const renderConnectStatus = () => {
+    const status = connectStatus?.stripe_connect_status || profile?.stripe_connect_status;
+    
+    if (status === 'pending') {
+      return (
+        <Alert className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Your account is pending verification. In the meantime, you can still receive payments through our platform.
+            We'll handle the payment processing and transfer the funds to your bank account once your Stripe verification is complete.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    if (status === 'active') {
+      return (
+        <Alert className="mt-4">
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <AlertDescription>
+            Your account is fully verified and ready to receive direct payments.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Payment Account Setup</h2>
@@ -121,13 +151,14 @@ export function ConnectAccountSetup({ profile, refetchProfile }: ConnectAccountS
                 {connectStatus?.stripe_connect_status || profile.stripe_connect_status || 'Unknown'}
               </span>
             </div>
+            {renderConnectStatus()}
             {(connectStatus?.stripe_connect_status === 'pending' || profile.stripe_connect_status === 'pending') && (
               <Button
                 onClick={handleConnectAccount}
                 variant="outline"
-                className="mt-2"
+                className="mt-4"
               >
-                Complete Setup
+                Complete Verification
               </Button>
             )}
           </div>
