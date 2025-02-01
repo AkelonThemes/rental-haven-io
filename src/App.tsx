@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Tenants from "./pages/Tenants";
 import Notifications from "./pages/Notifications";
 import Account from "./pages/Account";
+import Settings from "./pages/Settings";
 import Dashboard from "./pages/Dashboard";
 import TenantDashboard from "./pages/TenantDashboard";
 import { useEffect, useState } from "react";
@@ -124,6 +125,7 @@ const App = () => {
             {/* Shared protected routes */}
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/account" element={<Account />} />
+            <Route path="/settings" element={<Settings />} />
 
             {/* Redirect root to dashboard when authenticated */}
             <Route

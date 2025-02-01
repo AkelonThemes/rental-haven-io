@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench } from "lucide-react";
+import { Building2, Users, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -19,10 +19,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const { role } = useRole();
-  
-  useEffect(() => {
-    setIsSidebarOpen(!isMobile);
-  }, [isMobile]);
 
   const landlordMenuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
@@ -77,7 +73,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-      {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-white border-b">
         <div className="flex items-center space-x-2">
           <Building2 className="w-6 h-6 text-primary-600" />
@@ -88,7 +83,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </Button>
       </div>
 
-      {/* Sidebar Overlay */}
       {isMobile && isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40"
@@ -127,8 +121,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               ))}
             </nav>
           </div>
-          {/* Sign Out Button */}
-          <div className="p-4 border-t">
+          {/* Settings and Sign Out Buttons */}
+          <div className="p-4 border-t space-y-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={() => handleMenuItemClick('/settings')}
+            >
+              <Settings className="w-5 h-5 mr-2" />
+              Settings
+            </Button>
             <Button
               variant="ghost"
               className="w-full justify-start"
