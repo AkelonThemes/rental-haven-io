@@ -54,6 +54,8 @@ serve(async (req) => {
         const paymentIntent = event.data.object;
         const paymentId = paymentIntent.metadata.payment_id;
 
+        console.log('Payment succeeded:', paymentId);
+
         // Update payment status
         const { error: updateError } = await supabaseClient
           .from('payments')
@@ -71,45 +73,13 @@ serve(async (req) => {
         const paymentIntent = event.data.object;
         const paymentId = paymentIntent.metadata.payment_id;
 
+        console.log('Payment failed:', paymentId);
+
         // Update payment status
         const { error: updateError } = await supabaseClient
           .from('payments')
           .update({
             status: 'failed',
-          })
-          .eq('id', paymentId);
-
-        if (updateError) throw updateError;
-        break;
-      }
-
-      case 'transfer.paid': {
-        const transfer = event.data.object;
-        const paymentId = transfer.metadata.payment_id;
-
-        // Update transfer status
-        const { error: updateError } = await supabaseClient
-          .from('payments')
-          .update({
-            transfer_status: 'completed',
-            stripe_transfer_id: transfer.id,
-          })
-          .eq('id', paymentId);
-
-        if (updateError) throw updateError;
-        break;
-      }
-
-      case 'transfer.failed': {
-        const transfer = event.data.object;
-        const paymentId = transfer.metadata.payment_id;
-
-        // Update transfer status
-        const { error: updateError } = await supabaseClient
-          .from('payments')
-          .update({
-            transfer_status: 'failed',
-            stripe_transfer_id: transfer.id,
           })
           .eq('id', paymentId);
 
