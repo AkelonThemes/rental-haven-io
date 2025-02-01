@@ -65,48 +65,63 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          landlord_stripe_account_id: string | null
           payer_profile_id: string | null
           payment_date: string | null
           payment_type: Database["public"]["Enums"]["payment_type"]
+          platform_fee_amount: number | null
+          platform_fee_percentage: number | null
           property_id: string | null
           rent_period_end: string | null
           rent_period_start: string | null
           status: Database["public"]["Enums"]["payment_status"]
           stripe_payment_id: string | null
+          stripe_transfer_id: string | null
           subscription_id: string | null
           tenant_id: string | null
+          transfer_status: string | null
           updated_at: string
         }
         Insert: {
           amount: number
           created_at?: string
           id?: string
+          landlord_stripe_account_id?: string | null
           payer_profile_id?: string | null
           payment_date?: string | null
           payment_type: Database["public"]["Enums"]["payment_type"]
+          platform_fee_amount?: number | null
+          platform_fee_percentage?: number | null
           property_id?: string | null
           rent_period_end?: string | null
           rent_period_start?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           stripe_payment_id?: string | null
+          stripe_transfer_id?: string | null
           subscription_id?: string | null
           tenant_id?: string | null
+          transfer_status?: string | null
           updated_at?: string
         }
         Update: {
           amount?: number
           created_at?: string
           id?: string
+          landlord_stripe_account_id?: string | null
           payer_profile_id?: string | null
           payment_date?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"]
+          platform_fee_amount?: number | null
+          platform_fee_percentage?: number | null
           property_id?: string | null
           rent_period_end?: string | null
           rent_period_start?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           stripe_payment_id?: string | null
+          stripe_transfer_id?: string | null
           subscription_id?: string | null
           tenant_id?: string | null
+          transfer_status?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -148,6 +163,9 @@ export type Database = {
           has_completed_signup: boolean | null
           id: string
           role: string | null
+          stripe_connect_id: string | null
+          stripe_connect_onboarding_completed: boolean | null
+          stripe_connect_status: string | null
           updated_at: string
         }
         Insert: {
@@ -157,6 +175,9 @@ export type Database = {
           has_completed_signup?: boolean | null
           id: string
           role?: string | null
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -166,6 +187,9 @@ export type Database = {
           has_completed_signup?: boolean | null
           id?: string
           role?: string | null
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -324,7 +348,13 @@ export type Database = {
     }
     Enums: {
       app_role: "landlord" | "tenant"
-      payment_status: "pending" | "completed" | "failed" | "refunded"
+      payment_status:
+        | "pending"
+        | "completed"
+        | "failed"
+        | "refunded"
+        | "processing"
+      payment_transfer_status: "pending" | "processing" | "completed" | "failed"
       payment_type: "subscription" | "rent"
     }
     CompositeTypes: {

@@ -7,6 +7,7 @@ import { CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileDetails } from "@/components/account/ProfileDetails";
 import { SubscriptionDetails } from "@/components/account/SubscriptionDetails";
+import { ConnectAccountSetup } from "@/components/account/ConnectAccountSetup";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 import { PaymentList } from "@/components/payments/PaymentList";
@@ -174,6 +175,9 @@ const Account = () => {
 
         <div className="grid gap-6">
           <ProfileDetails profile={profile} />
+          {profile?.role === 'landlord' && (
+            <ConnectAccountSetup profile={profile} />
+          )}
           <SubscriptionDetails
             subscription={subscription}
             isLoading={isLoadingSubscription || isLoadingProfile}
