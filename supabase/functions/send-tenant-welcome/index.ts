@@ -70,6 +70,10 @@ Deno.serve(async (req) => {
 
     console.log('Sending email via Resend with link:', signInLink)
 
+    // During testing phase, redirect all emails to the verified email
+    const testingEmail = 'ensolute@gmail.com'
+    const isTestingPhase = true // Set this to false after domain verification
+
     // Send email with the appropriate link using Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -79,11 +83,12 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'Rental Haven <noreply@gukoya.com>',
-        to: tenantEmail,
+        to: isTestingPhase ? testingEmail : tenantEmail,
         subject: 'Welcome to Rental Haven - Your Login Credentials',
         html: `
           <p>Hello ${tenantName},</p>
           <p>Welcome to Rental Haven! Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
+          ${isTestingPhase ? `<p><strong>Test Mode:</strong> This email was meant for ${tenantEmail}</p>` : ''}
           <p>Here are your login credentials:</p>
           <ul>
             <li><strong>Email:</strong> ${tenantEmail}</li>
