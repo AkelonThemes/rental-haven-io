@@ -49,8 +49,11 @@ serve(async (req) => {
 
     console.log('Created Stripe Connect account:', account.id);
 
-    // Get the full origin URL with protocol
-    const origin = new URL(req.url).origin;
+    // Get the origin URL from the request headers
+    const origin = req.headers.get('origin');
+    if (!origin) {
+      throw new Error('Origin header is required');
+    }
     console.log('Using origin URL:', origin);
 
     // Create an account link for onboarding
