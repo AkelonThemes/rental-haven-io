@@ -63,11 +63,13 @@ const Settings = () => {
       console.log('Password updated successfully');
 
       // Send password change notification email
-      console.log('Sending password change notification email...');
-      const { error: emailError } = await supabase.functions.invoke('send-password-changed', {
+      console.log('Calling send-password-changed function...');
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-password-changed', {
         body: { userEmail: user.email }
       });
 
+      console.log('Email function response:', emailData);
+      
       if (emailError) {
         console.error('Error sending password change notification:', emailError);
         toast({
