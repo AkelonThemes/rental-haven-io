@@ -12,67 +12,88 @@ const Landing = () => {
 
   const handleSignIn = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      
       if (session) {
         navigate("/");
       } else {
-        // If not logged in, redirect to auth page (you'll need to create this)
         navigate("/auth");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      // Clear any invalid auth state
+      await supabase.auth.signOut();
+      
       toast({
-        title: "Error",
-        description: "Failed to check authentication status",
+        title: "Authentication Error",
+        description: "Please sign in again",
         variant: "destructive",
       });
+      navigate("/auth");
     }
   };
 
   const handleGetStarted = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+
       if (session) {
         navigate("/");
       } else {
         navigate("/auth");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to check authentication status",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      // Clear any invalid auth state
+      await supabase.auth.signOut();
+      
+      navigate("/auth");
     }
   };
 
   const handleUpgrade = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+
       if (session) {
         navigate("/account");
       } else {
         navigate("/auth");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to check authentication status",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      navigate("/");
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      // Clear any invalid auth state
+      await supabase.auth.signOut();
+      
+      navigate("/auth");
     }
   };
 
   // Check if user is already logged in
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (session) {
+          navigate("/");
+        }
+      } catch (error: any) {
+        console.error('Initial auth check error:', error);
+        // Clear any invalid auth state
+        await supabase.auth.signOut();
+        
+        // Don't redirect on initial load if there's an error
+        // Let the user see the landing page
+      }
+    };
+
     checkAuth();
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
