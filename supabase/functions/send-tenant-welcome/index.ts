@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Rental Haven <noreply@gukoya.com>',
+        from: 'Rental Haven <onboarding@resend.dev>', // Using Resend's default domain
         to: isTestingPhase ? testingEmail : tenantEmail,
         subject: 'Welcome to Rental Haven - Your Login Credentials',
         html: `
