@@ -26,13 +26,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: <Users className="w-5 h-5" />, label: "Tenants", href: "/tenants" },
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
     { icon: <UserCircle className="w-5 h-5" />, label: "Account", href: "/account" },
+    { icon: <Settings className="w-5 h-5" />, label: "Settings", href: "/settings" },
   ];
 
   const tenantMenuItems = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
     { icon: <Wrench className="w-5 h-5" />, label: "Maintenance", href: "/maintenance" },
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
-    { icon: <Lock className="w-5 h-5" />, label: "Settings", href: "/settings" },
+    { icon: <Settings className="w-5 h-5" />, label: "Settings", href: "/settings" },
   ];
 
   const menuItems = role === 'tenant' ? tenantMenuItems : landlordMenuItems;
@@ -122,16 +123,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               ))}
             </nav>
           </div>
-          {/* Settings and Sign Out Buttons */}
-          <div className="p-4 border-t space-y-2">
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={() => handleMenuItemClick('/settings')}
-            >
-              <Settings className="w-5 h-5 mr-2" />
-              Settings
-            </Button>
+          {/* Sign Out Button */}
+          <div className="p-4 border-t">
             <Button
               variant="ghost"
               className="w-full justify-start"
