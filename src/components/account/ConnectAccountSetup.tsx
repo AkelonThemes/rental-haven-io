@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { BankIcon, ArrowRight } from "lucide-react";
+import { Wallet, ArrowRight } from "lucide-react";
 
 interface ConnectAccountSetupProps {
   profile: Tables<"profiles"> | null;
@@ -63,7 +63,7 @@ export function ConnectAccountSetup({ profile }: ConnectAccountSetupProps) {
               disabled={loading}
               className="flex items-center gap-2"
             >
-              <BankIcon className="w-4 h-4" />
+              <Wallet className="w-4 h-4" />
               {loading ? "Setting up..." : "Connect Bank Account"}
               <ArrowRight className="w-4 h-4" />
             </Button>
