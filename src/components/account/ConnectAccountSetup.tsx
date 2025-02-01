@@ -1,27 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { Wallet, ArrowRight } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 interface ConnectAccountSetupProps {
   profile: Tables<"profiles"> | null;
+  refetchProfile: () => void;
 }
 
-export function ConnectAccountSetup({ profile }: ConnectAccountSetupProps) {
+export function ConnectAccountSetup({ profile, refetchProfile }: ConnectAccountSetupProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const success = searchParams.get('success');
+
+  useEffect(() => {
+    if (success === 'true') {
+      console.log('Returned from Stripe Connect onboarding, refreshing profile...');
+      refetchProfile();
+      toast({
+        title: "Account Connected",
+        description: "Your bank account has been successfully connected.",
+      });
+    }
+  }, [success, refetchProfile, toast]);
 
   const handleConnectAccount = async () => {
     try {
       setLoading(true);
+      console.log('Creating Connect account...');
       const { data, error } = await supabase.functions.invoke('create-connect-account');
       
       if (error) throw error;
       
       if (data?.url) {
+        console.log('Redirecting to Stripe Connect onboarding:', data.url);
         window.location.href = data.url;
       }
     } catch (error) {

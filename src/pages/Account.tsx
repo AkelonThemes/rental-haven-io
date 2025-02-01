@@ -18,33 +18,11 @@ const Account = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
 
-  useEffect(() => {
-    if (sessionId) {
-      toast({
-        title: "Processing Subscription",
-        description: "Please wait while we update your subscription...",
-        variant: "default",
-      });
-
-      // After 3 seconds, show the success message and refetch data
-      const timer = setTimeout(() => {
-        toast({
-          title: "Subscription Updated",
-          description: "Your subscription has been successfully updated.",
-          variant: "default",
-        });
-        // Remove the session_id from the URL
-        navigate('/account', { replace: true });
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [sessionId, navigate, toast]);
-
-  // Fetch profile data
-  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+  // Fetch profile data with automatic refetching
+  const { data: profile, isLoading: isLoadingProfile, refetch: refetchProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
+      console.log('Fetching profile data...');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
@@ -64,12 +42,12 @@ const Account = () => {
         throw profileError;
       }
       
+      console.log('Profile data:', profile);
       return profile;
     },
     retry: false,
   });
 
-  // Fetch subscription data with automatic refetching
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
     queryKey: ["subscription", sessionId], // Add sessionId to trigger refetch
     queryFn: async () => {
@@ -176,7 +154,7 @@ const Account = () => {
         <div className="grid gap-6">
           <ProfileDetails profile={profile} />
           {profile?.role === 'landlord' && (
-            <ConnectAccountSetup profile={profile} />
+            <ConnectAccountSetup profile={profile} refetchProfile={refetchProfile} />
           )}
           <SubscriptionDetails
             subscription={subscription}
