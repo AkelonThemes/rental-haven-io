@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
+import { CreatePaymentLinkDialog } from "@/components/payments/CreatePaymentLinkDialog";
 import {
   Table,
   TableBody,
@@ -120,7 +121,8 @@ const Tenants = () => {
                 <TableHead>Full Name</TableHead>
                 <TableHead>Property Address</TableHead>
                 <TableHead>Lease Period</TableHead>
-                <TableHead className="text-right">Rent Amount</TableHead>
+                <TableHead>Rent Amount</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -135,7 +137,10 @@ const Tenants = () => {
                   <TableCell>
                     {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-right">K{tenant.rent_amount}/month</TableCell>
+                  <TableCell>K{tenant.rent_amount}/month</TableCell>
+                  <TableCell className="text-right">
+                    <CreatePaymentLinkDialog propertyId={tenant.property?.id || ''} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
