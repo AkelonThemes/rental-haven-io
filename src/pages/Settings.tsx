@@ -47,6 +47,10 @@ const Settings = () => {
         return;
       }
 
+      // Get current user's email
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
       // Update password
       const { error: updateError } = await supabase.auth.updateUser({
         password: data.newPassword,
@@ -54,10 +58,25 @@ const Settings = () => {
 
       if (updateError) throw updateError;
 
-      toast({
-        title: "Success",
-        description: "Password updated successfully",
+      // Send password change notification email
+      const { error: emailError } = await supabase.functions.invoke('send-password-changed', {
+        body: { userEmail: user.email }
       });
+
+      if (emailError) {
+        console.error('Error sending password change notification:', emailError);
+        // Don't throw here, as the password was successfully changed
+        toast({
+          title: "Warning",
+          description: "Password updated successfully, but failed to send notification email",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Password updated successfully. A confirmation email has been sent.",
+        });
+      }
 
       form.reset();
     } catch (error: any) {
