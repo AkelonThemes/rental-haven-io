@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Lock } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -17,7 +17,6 @@ import {
 import { Card } from "@/components/ui/card";
 
 type FormData = {
-  email: string;
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
@@ -25,12 +24,10 @@ type FormData = {
 
 const Settings = () => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormData>({
     defaultValues: {
-      email: "",
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
@@ -51,32 +48,16 @@ const Settings = () => {
       }
 
       // Update password
-      if (data.currentPassword && data.newPassword) {
-        const { error: updateError } = await supabase.auth.updateUser({
-          password: data.newPassword,
-        });
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: data.newPassword,
+      });
 
-        if (updateError) throw updateError;
+      if (updateError) throw updateError;
 
-        toast({
-          title: "Success",
-          description: "Password updated successfully",
-        });
-      }
-
-      // Update email
-      if (data.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: data.email,
-        });
-
-        if (emailError) throw emailError;
-
-        toast({
-          title: "Success",
-          description: "Email update confirmation sent to your new email address",
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
 
       form.reset();
     } catch (error: any) {
@@ -94,34 +75,17 @@ const Settings = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences
-          </p>
+        <div className="flex items-center gap-2">
+          <Lock className="w-5 h-5 text-primary" />
+          <h1 className="text-2xl font-semibold tracking-tight">Security Settings</h1>
         </div>
+        <p className="text-muted-foreground">
+          Change your password to keep your account secure
+        </p>
 
         <Card className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Enter new email"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <div className="space-y-4">
                 <FormField
                   control={form.control}
@@ -179,7 +143,7 @@ const Settings = () => {
               </div>
 
               <Button type="submit" disabled={loading}>
-                {loading ? "Updating..." : "Update Settings"}
+                {loading ? "Updating..." : "Update Password"}
               </Button>
             </form>
           </Form>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench, Settings } from "lucide-react";
+import { Building2, Users, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench, Settings, Lock } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", href: "/dashboard" },
     { icon: <Wrench className="w-5 h-5" />, label: "Maintenance", href: "/maintenance" },
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", href: "/notifications" },
+    { icon: <Lock className="w-5 h-5" />, label: "Settings", href: "/settings" },
   ];
 
   const menuItems = role === 'tenant' ? tenantMenuItems : landlordMenuItems;

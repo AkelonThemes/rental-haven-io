@@ -42,7 +42,12 @@ Deno.serve(async (req) => {
           </ul>
           <p>Please use these credentials to log in at:</p>
           <p><a href="https://rental-haven-io.lovable.app/auth">Sign In to Your Account</a></p>
-          <p><strong>Important:</strong> For security reasons, we recommend changing your password after your first login.</p>
+          <p><strong>Important Security Notice:</strong> For your account's security, please change your password immediately after logging in. You can do this by:</p>
+          <ol>
+            <li>Going to the Settings page from the sidebar menu</li>
+            <li>Using the password change form to set a new, secure password</li>
+          </ol>
+          <p><strong>Note:</strong> Your email address (${tenantEmail}) will be your permanent login identifier and cannot be changed.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
         `
       })
