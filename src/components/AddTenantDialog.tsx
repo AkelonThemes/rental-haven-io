@@ -13,6 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
+interface AddTenantDialogProps {
+  propertyId: string;
+}
+
 const formSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email address"),
@@ -22,7 +26,7 @@ const formSchema = z.object({
   rent_amount: z.string().min(1, "Rent amount is required"),
 });
 
-export function AddTenantDialog() {
+export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,7 +36,7 @@ export function AddTenantDialog() {
     defaultValues: {
       full_name: "",
       email: "",
-      property_id: "",
+      property_id: propertyId,
       lease_start_date: "",
       lease_end_date: "",
       rent_amount: "",
