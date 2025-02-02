@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench, Settings, Lock } from "lucide-react";
+import { Building2, Users, Bell, UserCircle, LogOut, LayoutDashboard, Menu, X, Wrench, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -40,11 +40,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const handleSignOut = async () => {
     try {
-      // First sign out from Supabase
+      // First check if there's a valid session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // If no session exists, just clear local storage and redirect
+        localStorage.clear();
+        navigate("/landing");
+        return;
+      }
+
+      // If session exists, attempt to sign out
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Then clear any local storage data
+      // Clear any local storage data
       localStorage.clear();
       
       // Navigate to landing page
@@ -56,9 +66,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       });
     } catch (error: any) {
       console.error("Sign out error:", error);
+      // Even if there's an error, we should clear local state and redirect
+      localStorage.clear();
+      navigate("/landing");
+      
       toast({
-        title: "Error signing out",
-        description: "There was a problem signing out. Please try again.",
+        title: "Sign out completed",
+        description: "You have been logged out, but there was an error in the process.",
         variant: "destructive",
       });
     }
