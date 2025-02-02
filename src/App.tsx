@@ -36,15 +36,27 @@ const App = () => {
     const initSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        setSession(session);
+        if (error) {
+          if (error.message.includes('Invalid Refresh Token')) {
+            // Clear the invalid session
+            await supabase.auth.signOut();
+            setSession(null);
+          } else {
+            throw error;
+          }
+        } else {
+          setSession(session);
+        }
       } catch (error: any) {
         console.error("Error getting session:", error);
         toast({
           title: "Session Error",
-          description: error.message,
+          description: "Please sign in again",
           variant: "destructive",
         });
+        // Ensure we clear any invalid session state
+        await supabase.auth.signOut();
+        setSession(null);
       } finally {
         setLoading(false);
       }
@@ -54,7 +66,10 @@ const App = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (_event === 'TOKEN_REFRESHED') {
+        console.log('Token was refreshed successfully');
+      }
       setSession(session);
       if (!session) {
         queryClient.clear();
