@@ -116,6 +116,7 @@ serve(async (req) => {
 
     console.log('Creating Stripe Checkout session...');
     console.log('Amount:', payment.amount, 'Platform fee:', platformFeeAmount);
+    console.log('Landlord Stripe Account:', landlordStripeAccountId);
 
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
