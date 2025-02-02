@@ -13,6 +13,8 @@ interface Payment {
   amount: number;
   status: string;
   payment_date: string | null;
+  rent_period_start: string | null;
+  rent_period_end: string | null;
   created_at: string;
   stripe_payment_id: string | null;
   property: {
@@ -50,6 +52,8 @@ export default function TenantDashboard() {
             payment_date,
             created_at,
             stripe_payment_id,
+            rent_period_start,
+            rent_period_end,
             property:properties(
               address
             )
@@ -72,6 +76,20 @@ export default function TenantDashboard() {
       }
     },
   });
+
+  const handlePaymentClick = async () => {
+    if (!latestPayment?.stripe_payment_id) {
+      toast({
+        title: "Payment Error",
+        description: "No payment link available. Please contact your landlord.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Open Stripe Checkout in a new tab
+    window.open(`https://checkout.stripe.com/pay/${latestPayment.stripe_payment_id}`, '_blank');
+  };
 
   if (isLoading) {
     return (
@@ -104,6 +122,11 @@ export default function TenantDashboard() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-medium">Rent Payment - {latestPayment.property?.address}</p>
+                  {latestPayment.rent_period_start && latestPayment.rent_period_end && (
+                    <p className="text-sm text-gray-500">
+                      Period: {new Date(latestPayment.rent_period_start).toLocaleDateString()} - {new Date(latestPayment.rent_period_end).toLocaleDateString()}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-500">
                     Created on {new Date(latestPayment.created_at).toLocaleDateString()}
                   </p>
@@ -123,11 +146,12 @@ export default function TenantDashboard() {
                   <span className="font-semibold">K{latestPayment.amount}</span>
                 </div>
               </div>
-              {latestPayment.status === 'pending' && latestPayment.stripe_payment_id && (
+              {latestPayment.status === 'pending' && (
                 <Button
                   variant="outline"
                   className="mt-4 w-full"
-                  onClick={() => window.open(`https://checkout.stripe.com/pay/${latestPayment.stripe_payment_id}`, '_blank')}
+                  onClick={handlePaymentClick}
+                  disabled={!latestPayment.stripe_payment_id}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Pay Now
