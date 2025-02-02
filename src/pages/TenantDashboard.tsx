@@ -95,17 +95,29 @@ export default function TenantDashboard() {
     }
 
     try {
-      // Construct the Stripe Checkout URL
+      // Create payment intent using the edge function
+      const { data: { clientSecret }, error } = await supabase.functions.invoke(
+        'create-tenant-payment',
+        {
+          body: { payment_id: payment.id },
+        }
+      );
+
+      if (error) throw error;
+
+      if (!clientSecret) {
+        throw new Error('No client secret received');
+      }
+
+      // Redirect to Stripe Checkout
       const checkoutUrl = `https://checkout.stripe.com/pay/${payment.stripe_payment_id}`;
       console.log('Opening payment URL:', checkoutUrl);
-      
-      // Open in a new tab
       window.open(checkoutUrl, '_blank');
     } catch (error: any) {
       console.error('Error opening payment link:', error);
       toast({
         title: "Error",
-        description: "Could not open payment link. Please try again.",
+        description: "Could not process payment. Please try again.",
         variant: "destructive",
       });
     }
