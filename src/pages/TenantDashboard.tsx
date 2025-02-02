@@ -85,18 +85,19 @@ export default function TenantDashboard() {
   });
 
   const handlePaymentClick = async (payment: Payment) => {
-    if (!payment.stripe_payment_id) {
+    if (!payment.id) {
       toast({
         title: "Payment Error",
-        description: "No payment link available. Please contact your landlord.",
+        description: "Invalid payment information",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Create payment intent using the edge function
-      const { data: { clientSecret }, error } = await supabase.functions.invoke(
+      console.log('Creating payment session for payment ID:', payment.id);
+      
+      const { data, error } = await supabase.functions.invoke(
         'create-tenant-payment',
         {
           body: { payment_id: payment.id },
@@ -104,17 +105,15 @@ export default function TenantDashboard() {
       );
 
       if (error) throw error;
-
-      if (!clientSecret) {
-        throw new Error('No client secret received');
+      
+      console.log('Payment session response:', data);
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No payment URL received');
       }
-
-      // Redirect to Stripe Checkout
-      const checkoutUrl = `https://checkout.stripe.com/pay/${payment.stripe_payment_id}`;
-      console.log('Opening payment URL:', checkoutUrl);
-      window.open(checkoutUrl, '_blank');
     } catch (error: any) {
-      console.error('Error opening payment link:', error);
+      console.error('Error processing payment:', error);
       toast({
         title: "Error",
         description: "Could not process payment. Please try again.",
@@ -194,7 +193,6 @@ export default function TenantDashboard() {
                             variant="outline"
                             size="sm"
                             onClick={() => handlePaymentClick(payment)}
-                            disabled={!payment.stripe_payment_id}
                           >
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Pay Now
