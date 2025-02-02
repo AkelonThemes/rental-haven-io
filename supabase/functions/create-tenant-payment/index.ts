@@ -1,8 +1,5 @@
-// @ts-ignore: Deno imports
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore: Deno imports
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&no-check";
-// @ts-ignore: Deno imports
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target=deno&no-check";
 
 const corsHeaders = {
@@ -16,6 +13,18 @@ serve(async (req) => {
   }
 
   try {
+    // Get auth token from request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
     // Validate request body
     const body = await req.json().catch(() => null);
     if (!body?.payment_id) {
@@ -25,12 +34,6 @@ serve(async (req) => {
 
     const { payment_id } = body;
     console.log('Processing payment for payment_id:', payment_id);
-    
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
 
     // Get payment details with related data
     const { data: payment, error: paymentError } = await supabaseClient
@@ -83,6 +86,16 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
+    // Get user information
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (userError || !user) {
+      console.error('Error getting user:', userError);
+      throw new Error('Unauthorized');
+    }
+
     // Calculate platform fee
     const platformFeePercentage = payment.platform_fee_percentage || 2.0;
     const platformFeeAmount = Math.round((payment.amount * platformFeePercentage) / 100);
@@ -121,6 +134,7 @@ serve(async (req) => {
           tenant_id: payment.tenant_id,
         },
       },
+      customer_email: user.email,
     });
 
     console.log('Checkout session created:', session.url);
