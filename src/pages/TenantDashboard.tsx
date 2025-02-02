@@ -94,8 +94,21 @@ export default function TenantDashboard() {
       return;
     }
 
-    // Open Stripe Checkout in a new tab
-    window.open(`https://checkout.stripe.com/pay/${payment.stripe_payment_id}`, '_blank');
+    try {
+      // Construct the Stripe Checkout URL
+      const checkoutUrl = `https://checkout.stripe.com/pay/${payment.stripe_payment_id}`;
+      console.log('Opening payment URL:', checkoutUrl);
+      
+      // Open in a new tab
+      window.open(checkoutUrl, '_blank');
+    } catch (error: any) {
+      console.error('Error opening payment link:', error);
+      toast({
+        title: "Error",
+        description: "Could not open payment link. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
