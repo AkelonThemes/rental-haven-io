@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Receipt, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 interface Payment {
   id: string;
@@ -22,25 +23,24 @@ interface Payment {
 export default function TenantDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [latestPayment, setLatestPayment] = useState<Payment | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchLatestPayment() {
+  const { data: latestPayment, isLoading } = useQuery({
+    queryKey: ['tenant-latest-payment'],
+    queryFn: async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        if (!session) return null;
 
-        // First get the tenant ID for the current user
+        // Get the tenant ID for the current user
         const { data: tenant } = await supabase
           .from('tenants')
           .select('id')
           .eq('profile_id', session.user.id)
-          .single();
+          .maybeSingle();
 
-        if (!tenant) return;
+        if (!tenant) return null;
 
-        // Then get the latest pending payment for this tenant
+        // Get the latest pending payment for this tenant
         const { data: payment, error } = await supabase
           .from('payments')
           .select(`
@@ -54,7 +54,6 @@ export default function TenantDashboard() {
               address
             )
           `)
-          .eq('payment_type', 'rent')
           .eq('tenant_id', tenant.id)
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
@@ -62,22 +61,19 @@ export default function TenantDashboard() {
           .maybeSingle();
 
         if (error) throw error;
-        setLatestPayment(payment);
+        return payment;
       } catch (error: any) {
         toast({
           title: "Error fetching payment data",
           description: error.message,
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
+        return null;
       }
-    }
+    },
+  });
 
-    fetchLatestPayment();
-  }, [toast]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
