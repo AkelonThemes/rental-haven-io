@@ -16,15 +16,23 @@ serve(async (req) => {
   }
 
   try {
-    const { payment_id } = await req.json();
+    // Validate request body
+    const body = await req.json().catch(() => null);
+    if (!body?.payment_id) {
+      console.error('No payment_id provided in request body');
+      throw new Error('Payment ID is required');
+    }
+
+    const { payment_id } = body;
     console.log('Processing payment for payment_id:', payment_id);
     
+    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Get payment details
+    // Get payment details with related data
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .select(`
@@ -42,33 +50,48 @@ serve(async (req) => {
 
     if (paymentError) {
       console.error('Error fetching payment:', paymentError);
-      throw new Error('Payment not found');
+      throw new Error('Failed to fetch payment details');
     }
 
     if (!payment) {
-      console.error('Payment not found');
+      console.error('Payment not found for ID:', payment_id);
       throw new Error('Payment not found');
     }
 
     console.log('Payment details:', payment);
 
+    // Validate required payment data
+    if (!payment.amount || payment.amount <= 0) {
+      console.error('Invalid payment amount:', payment.amount);
+      throw new Error('Invalid payment amount');
+    }
+
     const landlordStripeAccountId = payment.property?.owner?.stripe_connect_id;
     if (!landlordStripeAccountId) {
-      console.error('Landlord has not completed Stripe onboarding');
+      console.error('Landlord Stripe account not found');
       throw new Error('Landlord has not completed Stripe onboarding');
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    // Initialize Stripe
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) {
+      console.error('STRIPE_SECRET_KEY not found in environment');
+      throw new Error('Stripe configuration error');
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
 
-    // Calculate platform fee (2% by default)
+    // Calculate platform fee
     const platformFeePercentage = payment.platform_fee_percentage || 2.0;
     const platformFeeAmount = Math.round((payment.amount * platformFeePercentage) / 100);
+    const amountInCents = Math.round(payment.amount * 100);
 
     console.log('Creating Stripe Checkout session...');
+    console.log('Amount:', payment.amount, 'Platform fee:', platformFeeAmount);
 
-    // Create a Checkout Session
+    // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -80,7 +103,7 @@ serve(async (req) => {
               ? `Payment for ${payment.tenant.profile.full_name}`
               : undefined,
           },
-          unit_amount: Math.round(payment.amount * 100), // Convert to cents
+          unit_amount: amountInCents,
         },
         quantity: 1,
       }],
@@ -102,7 +125,7 @@ serve(async (req) => {
 
     console.log('Checkout session created:', session.url);
 
-    // Update payment record with Stripe payment intent ID
+    // Update payment record
     if (session.payment_intent) {
       const { error: updateError } = await supabaseClient
         .from('payments')
@@ -115,23 +138,25 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('Error updating payment record:', updateError);
+        // Continue despite update error - the payment can still proceed
       }
     }
 
     return new Response(
-      JSON.stringify({
-        url: session.url,
-      }),
+      JSON.stringify({ url: session.url }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     );
   } catch (error) {
-    console.error('Error creating payment session:', error);
+    console.error('Error in create-tenant-payment:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
+      JSON.stringify({ 
+        error: error.message || 'An unexpected error occurred',
+        details: error.toString()
+      }),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }
