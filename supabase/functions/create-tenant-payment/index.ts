@@ -13,20 +13,30 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting payment process...');
+
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('No authorization header found');
       throw new Error('No authorization header');
     }
 
     // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase configuration');
+      throw new Error('Server configuration error');
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     // Validate request body
     const body = await req.json().catch(() => null);
+    console.log('Request body:', body);
+
     if (!body?.payment_id) {
       console.error('No payment_id provided in request body');
       throw new Error('Payment ID is required');
@@ -96,6 +106,8 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    console.log('User found:', user.email);
+
     // Calculate platform fee
     const platformFeePercentage = payment.platform_fee_percentage || 2.0;
     const platformFeeAmount = Math.round((payment.amount * platformFeePercentage) / 100);
@@ -139,7 +151,7 @@ serve(async (req) => {
 
     console.log('Checkout session created:', session.url);
 
-    // Update payment record
+    // Update payment record with Stripe payment intent ID
     if (session.payment_intent) {
       const { error: updateError } = await supabaseClient
         .from('payments')
