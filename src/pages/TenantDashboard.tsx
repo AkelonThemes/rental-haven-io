@@ -31,6 +31,16 @@ export default function TenantDashboard() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
+        // First get the tenant ID for the current user
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('profile_id', session.user.id)
+          .single();
+
+        if (!tenant) return;
+
+        // Then get the latest pending payment for this tenant
         const { data: payment, error } = await supabase
           .from('payments')
           .select(`
@@ -45,7 +55,7 @@ export default function TenantDashboard() {
             )
           `)
           .eq('payment_type', 'rent')
-          .eq('tenant_id', session.user.id)
+          .eq('tenant_id', tenant.id)
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
           .limit(1)
