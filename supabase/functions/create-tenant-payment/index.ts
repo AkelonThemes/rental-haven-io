@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&no-check";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target=deno&no-check";
+import Stripe from "https://esm.sh/stripe@14.21.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -62,7 +61,11 @@ serve(async (req) => {
         ),
         property:properties(
           address,
-          owner:profiles(stripe_connect_id)
+          owner:profiles(
+            stripe_connect_id,
+            stripe_connect_status,
+            stripe_connect_onboarding_completed
+          )
         )
       `)
       .eq('id', payment_id)
@@ -87,15 +90,23 @@ serve(async (req) => {
     }
 
     const landlordStripeAccountId = payment.property?.owner?.stripe_connect_id;
+    const onboardingCompleted = payment.property?.owner?.stripe_connect_onboarding_completed;
+    const connectStatus = payment.property?.owner?.stripe_connect_status;
+
     if (!landlordStripeAccountId) {
       console.error('Landlord Stripe account not found');
+      throw new Error('Landlord has not set up their Stripe Connect account');
+    }
+
+    if (!onboardingCompleted) {
+      console.error('Landlord Stripe onboarding not completed');
       throw new Error('Landlord has not completed Stripe onboarding');
     }
 
-    // Initialize Stripe
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
+    if (connectStatus !== 'active') {
+      console.error('Landlord Stripe account not active:', connectStatus);
+      throw new Error(`Landlord's Stripe account status is ${connectStatus}. Please contact support.`);
+    }
 
     // Get user information
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
@@ -108,6 +119,11 @@ serve(async (req) => {
     }
 
     console.log('User found:', user.email);
+
+    // Initialize Stripe
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+    });
 
     // Calculate platform fee
     const platformFeePercentage = payment.platform_fee_percentage || 2.0;
