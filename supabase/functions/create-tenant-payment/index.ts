@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,10 +26,16 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
       console.error('Missing Supabase configuration');
       throw new Error('Server configuration error');
+    }
+
+    if (!stripeSecretKey) {
+      console.error('Missing Stripe configuration');
+      throw new Error('Stripe configuration error');
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
@@ -86,12 +93,6 @@ serve(async (req) => {
     }
 
     // Initialize Stripe
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeSecretKey) {
-      console.error('STRIPE_SECRET_KEY not found in environment');
-      throw new Error('Stripe configuration error');
-    }
-
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
