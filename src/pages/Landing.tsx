@@ -10,62 +10,16 @@ const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSignIn = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      
-      if (session) {
-        navigate("/dashboard");
-      } else {
-        navigate("/auth");
-      }
-    } catch (error: any) {
-      console.error('Auth error:', error);
-      // Clear any invalid auth state
-      await supabase.auth.signOut();
-      
-      toast({
-        title: "Authentication Error",
-        description: "Please sign in again",
-        variant: "destructive",
-      });
-      navigate("/auth");
-    }
+  const handleSignIn = () => {
+    navigate("/login");
   };
 
-  const handleGetStarted = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-
-      if (session) {
-        navigate("/dashboard");
-      } else {
-        navigate("/auth");
-      }
-    } catch (error: any) {
-      console.error('Auth error:', error);
-      await supabase.auth.signOut();
-      navigate("/auth");
-    }
+  const handleGetStarted = () => {
+    navigate("/login");
   };
 
-  const handleUpgrade = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-
-      if (session) {
-        navigate("/account");
-      } else {
-        navigate("/auth");
-      }
-    } catch (error: any) {
-      console.error('Auth error:', error);
-      await supabase.auth.signOut();
-      navigate("/auth");
-    }
+  const handleUpgrade = () => {
+    navigate("/login");
   };
 
   // Check if user is already logged in
