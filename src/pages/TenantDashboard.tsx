@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Receipt, ExternalLink } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Table,
@@ -33,6 +33,8 @@ interface Payment {
 export default function TenantDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const success = searchParams.get('success');
 
   const { data: latestPayments, isLoading, refetch } = useQuery({
     queryKey: ['tenant-latest-payments'],
@@ -81,8 +83,23 @@ export default function TenantDashboard() {
     },
   });
 
+  // Show success toast when payment is completed
+  useEffect(() => {
+    if (success === 'true') {
+      toast({
+        title: "Payment Successful",
+        description: "Your payment has been processed successfully.",
+        variant: "default",
+      });
+      // Clear the success parameter from URL
+      navigate('/dashboard', { replace: true });
+    }
+  }, [success, toast, navigate]);
+
   // Subscribe to payment status changes
   useEffect(() => {
+    if (!latestPayments?.length) return;
+
     const channel = supabase
       .channel('payment-updates')
       .on(
@@ -91,7 +108,7 @@ export default function TenantDashboard() {
           event: 'UPDATE',
           schema: 'public',
           table: 'payments',
-          filter: `tenant_id=eq.${latestPayments?.[0]?.id}`,
+          filter: `tenant_id=eq.${latestPayments[0]?.id}`,
         },
         (payload) => {
           console.log('Payment updated:', payload);
