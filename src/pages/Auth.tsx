@@ -19,14 +19,12 @@ const Auth = () => {
 
   useEffect(() => {
     const initAuth = async () => {
-      // Always sign out first to ensure a clean state
       await supabase.auth.signOut();
       
       const token = searchParams.get('token');
       if (token) {
         setIsSignUp(true);
         try {
-          // Decode the base64 token to get the email
           const tokenData = JSON.parse(atob(token));
           if (tokenData.email) {
             setEmail(tokenData.email);
@@ -40,16 +38,34 @@ const Auth = () => {
           });
         }
       } else {
-        // For non-tenant flows, check if there's an existing session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          navigate("/");
+          handleRedirect(session.user.id);
         }
       }
     };
 
     initAuth();
   }, [navigate, searchParams, toast]);
+
+  const handleRedirect = async (userId: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (profile?.role === 'tenant') {
+        navigate("/tenant-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error('Error fetching role:', error);
+      navigate("/dashboard"); // Default to dashboard if role fetch fails
+    }
+  };
 
   const validateForm = () => {
     if (!email || !password) {
@@ -86,8 +102,8 @@ const Auth = () => {
           options: {
             emailRedirectTo: `${window.location.origin}/auth`,
             data: {
-              full_name: email.split('@')[0], // Default name from email
-              role: 'tenant' // Set role as tenant for tenant signups
+              full_name: email.split('@')[0],
+              role: 'tenant'
             }
           }
         });
@@ -107,7 +123,7 @@ const Auth = () => {
         }
 
         if (data.session) {
-          navigate("/");
+          handleRedirect(data.session.user.id);
         } else {
           toast({
             title: "Check your email",
@@ -140,7 +156,7 @@ const Auth = () => {
         }
 
         if (data.session) {
-          navigate("/");
+          handleRedirect(data.session.user.id);
         }
       }
     } catch (error: any) {
