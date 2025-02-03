@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "lucide-react";
+import { CreditCard } from "lucide-react";
 
 interface PaymentLinkFormData {
   amount: number;
@@ -21,7 +21,6 @@ export function CreatePaymentLinkDialog({ propertyId, tenantId }: { propertyId: 
 
   const onSubmit = async (data: PaymentLinkFormData) => {
     try {
-      // Create a payment record with pending status
       const { error } = await supabase
         .from('payments')
         .insert([{
@@ -56,14 +55,13 @@ export function CreatePaymentLinkDialog({ propertyId, tenantId }: { propertyId: 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
-          <Link className="mr-2 h-4 w-4" />
-          Create Payment Link
+        <Button variant="outline" size="icon">
+          <CreditCard className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Payment Link</DialogTitle>
+          <DialogTitle>Generate Payment</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -107,7 +105,7 @@ export function CreatePaymentLinkDialog({ propertyId, tenantId }: { propertyId: 
               )}
             />
             <Button type="submit" className="w-full">
-              Create Payment Link
+              Generate Payment
             </Button>
           </form>
         </Form>

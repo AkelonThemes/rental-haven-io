@@ -62,9 +62,8 @@ export function TenantSummarySheet({ tenantId, fullName }: TenantSummarySheetPro
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Eye className="h-4 w-4 mr-2" />
-          View
+        <Button variant="outline" size="icon">
+          <Eye className="h-4 w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent>

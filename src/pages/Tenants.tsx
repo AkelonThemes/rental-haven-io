@@ -169,18 +169,10 @@ const Tenants = () => {
                   <TableCell>K{tenant.rent_amount}/month</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        asChild
-                      >
-                        <CreatePaymentLinkDialog 
-                          propertyId={tenant.property_id} 
-                          tenantId={tenant.id}
-                        >
-                          <CreditCard className="h-4 w-4" />
-                        </CreatePaymentLinkDialog>
-                      </Button>
+                      <CreatePaymentLinkDialog 
+                        propertyId={tenant.property_id} 
+                        tenantId={tenant.id}
+                      />
                       <Button
                         variant="outline"
                         size="icon"
@@ -213,18 +205,10 @@ const Tenants = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        asChild
-                      >
-                        <TenantSummarySheet 
-                          tenantId={tenant.id} 
-                          fullName={tenant.profiles?.full_name || "N/A"}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </TenantSummarySheet>
-                      </Button>
+                      <TenantSummarySheet 
+                        tenantId={tenant.id} 
+                        fullName={tenant.profiles?.full_name || "N/A"}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
