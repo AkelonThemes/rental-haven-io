@@ -1,10 +1,10 @@
 import { Building2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { getLandlordMenuItems, getTenantMenuItems } from "./DashboardMenuItems";
 
 interface DashboardSidebarProps {
-  role: string;
+  role: string | null;
   isMobile: boolean;
   isSidebarOpen: boolean;
   onMenuItemClick: (href: string) => void;
@@ -22,16 +22,20 @@ export const DashboardSidebar = ({
   const menuItems = role === 'tenant' ? getTenantMenuItems() : getLandlordMenuItems();
 
   return (
-    <div className={`
-      fixed md:static h-full w-64 bg-white border-r transform transition-transform duration-200 ease-in-out
-      ${isMobile ? 'z-50' : ''}
-      ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-    `}>
+    <aside 
+      className={`
+        fixed md:sticky top-0 left-0 h-full w-64 bg-white border-r shadow-sm
+        transform transition-transform duration-300 ease-in-out z-50
+        ${isMobile ? (isSidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
+      `}
+    >
       <div className="flex flex-col h-full">
-        <div className="p-4 flex-1">
-          <div className="hidden md:flex items-center space-x-2 mb-8">
-            <Building2 className="w-6 h-6 text-primary-600" />
-            <span className="text-lg font-semibold text-gray-900">PropManager</span>
+        <div className="p-4">
+          <div className="flex items-center space-x-2 mb-8">
+            <Building2 className="w-6 h-6 text-primary" />
+            <span className="text-lg font-semibold text-gray-900">
+              {role === 'tenant' ? 'Tenant Portal' : 'PropManager'}
+            </span>
           </div>
           <nav className="space-y-1">
             {menuItems.map((item) => (
@@ -39,9 +43,10 @@ export const DashboardSidebar = ({
                 key={item.href}
                 onClick={() => onMenuItemClick(item.href)}
                 className={`
-                  w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm
+                  w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm
+                  transition-colors duration-200
                   ${location.pathname === item.href
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : 'text-gray-600 hover:bg-gray-100'
                   }
                 `}
@@ -52,7 +57,7 @@ export const DashboardSidebar = ({
             ))}
           </nav>
         </div>
-        <div className="p-4 border-t">
+        <div className="mt-auto p-4 border-t">
           <Button
             variant="ghost"
             className="w-full justify-start"
@@ -63,6 +68,6 @@ export const DashboardSidebar = ({
           </Button>
         </div>
       </div>
-    </div>
+    </aside>
   );
 };

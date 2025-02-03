@@ -16,23 +16,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
-  const { role } = useRole();
+  const { role, loading: roleLoading } = useRole();
 
   const handleSignOut = async () => {
     try {
-      // First clear local storage to ensure we remove any stale data
       localStorage.clear();
-      
-      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      
-      // Even if there's an error, we want to redirect to landing
-      // as the user's session might be invalid
       navigate("/landing");
       
       if (error) {
         console.error("Sign out error:", error);
-        // Show a generic success message as the user is effectively signed out
         toast({
           title: "Signed out",
           description: "You have been logged out of your account.",
@@ -45,7 +38,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       }
     } catch (error: any) {
       console.error("Sign out error:", error);
-      // Even if there's an error, clear local storage and redirect
       localStorage.clear();
       navigate("/landing");
       
@@ -63,8 +55,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
   };
 
+  if (roleLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+    <div className="flex min-h-screen bg-background">
       <DashboardMobileHeader 
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -85,14 +85,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         onSignOut={handleSignOut}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="h-16 md:h-0" />
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto p-6">
-            {children}
-          </div>
+      <main className="flex-1 flex flex-col min-h-screen">
+        <div className="h-16 md:h-0" /> {/* Mobile header spacing */}
+        <div className="flex-1 p-6">
+          {children}
         </div>
-      </div>
+      </main>
     </div>
   );
 };
