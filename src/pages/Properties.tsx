@@ -69,6 +69,10 @@ const Properties = () => {
     );
   }
 
+  const handleEditClick = (propertyId: string) => {
+    navigate(`/properties/${propertyId}/edit`);
+  };
+
   return (
     <DashboardLayout>
       <div className="mb-8 flex justify-between items-center">
@@ -125,7 +129,7 @@ const Properties = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/properties/${property.id}/edit`)}
+                        onClick={() => handleEditClick(property.id)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
