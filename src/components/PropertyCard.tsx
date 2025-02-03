@@ -31,7 +31,6 @@ export function PropertyCard({ property }: PropertyCardProps) {
         </div>
         <div className="space-y-2">
           <AddTenantDialog propertyId={property.id} />
-          <CreatePaymentLinkDialog propertyId={property.id} />
         </div>
       </div>
     </Card>
