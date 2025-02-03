@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -72,6 +72,12 @@ export default function Login() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Loading..." : "Login"}
             </Button>
+            <div className="text-center text-sm text-gray-600 mt-4">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary hover:underline">
+                Sign up
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
