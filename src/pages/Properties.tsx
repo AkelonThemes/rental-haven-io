@@ -22,6 +22,7 @@ interface Property {
   zip_code: string;
   status: string;
   rent_amount: number;
+  tenants: any[];
 }
 
 const Properties = () => {
@@ -35,7 +36,7 @@ const Properties = () => {
 
       const { data, error } = await supabase
         .from('properties')
-        .select('*')
+        .select('*, tenants(*)')
         .eq('owner_id', session.session.user.id);
 
       if (error) {
@@ -47,7 +48,10 @@ const Properties = () => {
         throw error;
       }
 
-      return data || [];
+      return data.map(property => ({
+        ...property,
+        status: property.tenants && property.tenants.length > 0 ? 'occupied' : 'vacant'
+      })) || [];
     },
   });
 
@@ -107,7 +111,7 @@ const Properties = () => {
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       property.status === 'vacant' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
                     }`}>
-                      {property.status || 'vacant'}
+                      {property.status}
                     </span>
                   </TableCell>
                   <TableCell>K{property.rent_amount}/month</TableCell>
