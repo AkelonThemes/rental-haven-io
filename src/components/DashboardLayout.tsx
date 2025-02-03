@@ -98,13 +98,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-14 items-center px-3 pt-16">
+          <div className="flex h-14 items-center pl-4 pt-16">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
-          <nav className="flex-1 overflow-y-auto px-3 py-2">
+          <nav className="flex-1 overflow-y-auto pl-4 pr-2 py-2">
             <ul role="list" className="flex flex-1 flex-col gap-y-4">
               <li>
-                <ul role="list" className="-mx-2 space-y-1">
+                <ul role="list" className="-ml-2 space-y-1">
                   {navigation.map((item) => (
                     <li key={item.name}>
                       <Link
@@ -149,14 +149,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-60 lg:flex-col">
-        <div className="flex grow flex-col gap-y-3 overflow-y-auto border-r border-gray-200 bg-white px-3 pb-2">
-          <div className="flex h-14 shrink-0 items-center">
+        <div className="flex grow flex-col gap-y-3 overflow-y-auto border-r border-gray-200 bg-white">
+          <div className="flex h-14 shrink-0 items-center pl-4">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
-          <nav className="flex flex-1 flex-col">
+          <nav className="flex flex-1 flex-col pl-4 pr-2">
             <ul role="list" className="flex flex-1 flex-col gap-y-4">
               <li>
-                <ul role="list" className="-mx-2 space-y-1">
+                <ul role="list" className="-ml-2 space-y-1">
                   {navigation.map((item) => (
                     <li key={item.name}>
                       <Link
@@ -183,7 +183,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   ))}
                 </ul>
               </li>
-              <li className="mt-auto">
+              <li className="mt-auto pb-2">
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-x-3"
