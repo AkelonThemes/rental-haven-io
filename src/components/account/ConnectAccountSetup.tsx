@@ -1,168 +1,31 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
-import { Wallet, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2 } from "lucide-react";
 
 interface ConnectAccountSetupProps {
   profile: Tables<"profiles"> | null;
-  refetchProfile: () => void;
 }
 
-export function ConnectAccountSetup({ profile, refetchProfile }: ConnectAccountSetupProps) {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-  const [searchParams] = useSearchParams();
-  const success = searchParams.get('success');
-  const refresh = searchParams.get('refresh');
-
-  // Query to check Connect account status
-  const { data: connectStatus, refetch: refetchStatus } = useQuery({
-    queryKey: ['stripe-connect-status', profile?.stripe_connect_id],
-    queryFn: async () => {
-      if (!profile?.stripe_connect_id) return null;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('stripe_connect_status, stripe_connect_onboarding_completed')
-        .eq('id', profile.id)
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!profile?.stripe_connect_id,
-  });
-
-  useEffect(() => {
-    const handleReturn = async () => {
-      if (success === 'true' || refresh === 'true') {
-        console.log('Returned from Stripe Connect, refreshing profile...');
-        await refetchProfile();
-        await refetchStatus();
-        
-        if (success === 'true') {
-          toast({
-            title: "Account Connected",
-            description: "Your bank account connection has been initiated. Please complete the verification process.",
-          });
-        }
-      }
-    };
-
-    handleReturn();
-  }, [success, refresh, refetchProfile, refetchStatus, toast]);
-
-  const handleConnectAccount = async () => {
-    try {
-      setLoading(true);
-      console.log('Creating Connect account...');
-      const { data, error } = await supabase.functions.invoke('create-connect-account');
-      
-      if (error) throw error;
-      
-      if (data?.url) {
-        console.log('Redirecting to Stripe Connect onboarding:', data.url);
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error creating Connect account:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create Stripe Connect account. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusBadgeColor = (status: string | null) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'restricted':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const renderConnectStatus = () => {
-    const status = connectStatus?.stripe_connect_status || profile?.stripe_connect_status;
-    
-    if (status === 'pending') {
-      return (
-        <Alert className="mt-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Your account is pending verification. In the meantime, you can still receive payments through our platform.
-            We'll handle the payment processing and transfer the funds to your bank account once your Stripe verification is complete.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (status === 'active') {
-      return (
-        <Alert className="mt-4">
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
-          <AlertDescription>
-            Your account is fully verified and ready to receive direct payments.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
+export function ConnectAccountSetup({ profile }: ConnectAccountSetupProps) {
+  if (profile?.role !== 'landlord') {
     return null;
-  };
+  }
 
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Payment Account Setup</h2>
+      <h2 className="text-lg font-semibold mb-4">Payment Processing</h2>
       <div className="space-y-4">
-        {!profile?.stripe_connect_id ? (
-          <div className="flex flex-col items-start gap-4">
-            <p className="text-muted-foreground">
-              Connect your bank account to receive rent payments directly.
-            </p>
-            <Button
-              onClick={handleConnectAccount}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <Wallet className="w-4 h-4" />
-              {loading ? "Setting up..." : "Connect Bank Account"}
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Status:</span>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(connectStatus?.stripe_connect_status || profile.stripe_connect_status)}`}>
-                {connectStatus?.stripe_connect_status || profile.stripe_connect_status || 'Unknown'}
-              </span>
-            </div>
-            {renderConnectStatus()}
-            {(connectStatus?.stripe_connect_status === 'pending' || profile.stripe_connect_status === 'pending') && (
-              <Button
-                onClick={handleConnectAccount}
-                variant="outline"
-                className="mt-4"
-              >
-                Complete Verification
-              </Button>
-            )}
-          </div>
-        )}
+        <Alert>
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <AlertDescription>
+            Your account is ready to process payments. When tenants make payments, they will be processed through our platform
+            and we will handle the transfer of funds to you on a monthly basis.
+          </AlertDescription>
+        </Alert>
+        <p className="text-sm text-muted-foreground">
+          Tenant payments will be automatically recorded and visible in your dashboard. 
+          Funds will be transferred to you monthly, with transaction fees deducted.
+        </p>
       </div>
     </Card>
   );
