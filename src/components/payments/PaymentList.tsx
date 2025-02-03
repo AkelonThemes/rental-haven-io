@@ -6,9 +6,10 @@ interface PaymentListProps {
     property: Tables<"properties"> | null;
   })[] | null;
   isLoading: boolean;
+  type?: 'rent' | 'subscription';
 }
 
-export function PaymentList({ payments, isLoading }: PaymentListProps) {
+export function PaymentList({ payments, isLoading, type }: PaymentListProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -17,13 +18,21 @@ export function PaymentList({ payments, isLoading }: PaymentListProps) {
     );
   }
 
-  if (!payments?.length) {
+  const filteredPayments = type 
+    ? payments?.filter(payment => payment.payment_type === type)
+    : payments;
+
+  if (!filteredPayments?.length) {
     return (
       <div className="text-center py-8">
         <Receipt className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-4 text-lg font-semibold">No payments found</h3>
         <p className="mt-2 text-gray-500">
-          No payment records match your current filters.
+          {type === 'subscription' 
+            ? 'No subscription payment records found.'
+            : type === 'rent'
+            ? 'No rent payment records found.'
+            : 'No payment records match your current filters.'}
         </p>
       </div>
     );
@@ -31,7 +40,7 @@ export function PaymentList({ payments, isLoading }: PaymentListProps) {
 
   return (
     <div className="divide-y">
-      {payments.map((payment) => (
+      {filteredPayments.map((payment) => (
         <div key={payment.id} className="py-4 flex items-center justify-between">
           <div>
             <p className="font-medium">

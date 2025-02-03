@@ -1,23 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CreditCard } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { PaymentList } from "@/components/payments/PaymentList";
 
-interface PaymentSectionProps {
-  profile: Tables<"profiles"> | null;
-}
-
-export const PaymentSection = ({ profile }: PaymentSectionProps) => {
-  const navigate = useNavigate();
-
-  const { data: payments, isLoading: isLoadingPayments } = useQuery({
-    queryKey: ['payments'],
+export function PaymentSection() {
+  const { data: payments, isLoading } = useQuery({
+    queryKey: ['subscription-payments'],
     queryFn: async () => {
-      if (!profile?.id) return null;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
 
       const { data, error } = await supabase
         .from('payments')
@@ -25,36 +16,23 @@ export const PaymentSection = ({ profile }: PaymentSectionProps) => {
           *,
           property:properties(*)
         `)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .eq('payment_type', 'subscription')
+        .eq('payer_profile_id', user.id)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching payments:', error);
-        throw error;
-      }
-
+      if (error) throw error;
       return data;
     },
-    enabled: !!profile?.id,
   });
 
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Payment History</h2>
-      <div className="space-y-4">
-        <PaymentList 
-          payments={payments} 
-          isLoading={isLoadingPayments} 
-        />
-        <Button
-          variant="outline"
-          onClick={() => navigate("/payments")}
-          className="mt-4"
-        >
-          <CreditCard className="mr-2 h-4 w-4" />
-          View All Payments
-        </Button>
-      </div>
+      <PaymentList 
+        payments={payments} 
+        isLoading={isLoading}
+        type="subscription"
+      />
     </Card>
   );
-};
+}

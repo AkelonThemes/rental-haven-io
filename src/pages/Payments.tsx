@@ -6,14 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Payments() {
   const { data: payments, isLoading } = useQuery({
-    queryKey: ['payments'],
+    queryKey: ['rent-payments'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
       const { data, error } = await supabase
         .from('payments')
         .select(`
           *,
           property:properties(*)
         `)
+        .eq('payment_type', 'rent')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -21,7 +25,7 @@ export default function Payments() {
     },
   });
 
-  // Calculate total collected and pending amounts
+  // Calculate total collected and pending amounts for rent payments only
   const totalCollected = payments?.reduce((sum, payment) => 
     payment.status === 'completed' ? sum + Number(payment.amount) : sum, 0) || 0;
 
@@ -32,7 +36,7 @@ export default function Payments() {
     <DashboardLayout>
       <div className="space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Payments</h1>
+          <h1 className="text-3xl font-bold">Rent Payments</h1>
         </div>
         <PaymentStats 
           totalCollected={totalCollected} 
@@ -40,7 +44,8 @@ export default function Payments() {
         />
         <PaymentList 
           payments={payments} 
-          isLoading={isLoading} 
+          isLoading={isLoading}
+          type="rent"
         />
       </div>
     </DashboardLayout>
