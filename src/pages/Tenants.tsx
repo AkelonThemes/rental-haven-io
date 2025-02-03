@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Pencil, Trash2 } from "lucide-react";
+import { Users, Pencil, Trash2, Eye, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
 import { TenantSummarySheet } from "@/components/TenantSummarySheet";
@@ -163,28 +163,35 @@ const Tenants = () => {
                     {tenant.properties?.address || "N/A"}
                   </TableCell>
                   <TableCell>
-                    {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
+                    {new Date(tenant.lease_start_date).toLocaleDateString()} -{" "}
+                    {new Date(tenant.lease_end_date).toLocaleDateString()}
                   </TableCell>
                   <TableCell>K{tenant.rent_amount}/month</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <CreatePaymentLinkDialog 
-                        propertyId={tenant.property_id} 
-                        tenantId={tenant.id}
-                      />
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
+                        asChild
+                      >
+                        <CreatePaymentLinkDialog 
+                          propertyId={tenant.property_id} 
+                          tenantId={tenant.id}
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </CreatePaymentLinkDialog>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => navigate(`/tenants/${tenant.id}/edit`)}
                       >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                          <Button variant="outline" size="icon">
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -206,10 +213,18 @@ const Tenants = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                      <TenantSummarySheet 
-                        tenantId={tenant.id} 
-                        fullName={tenant.profiles?.full_name || "N/A"} 
-                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        asChild
+                      >
+                        <TenantSummarySheet 
+                          tenantId={tenant.id} 
+                          fullName={tenant.profiles?.full_name || "N/A"}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </TenantSummarySheet>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
