@@ -51,13 +51,13 @@ const Tenants = () => {
   const queryClient = useQueryClient();
 
   const { data: tenants = [], isError, isLoading } = useQuery({
-    queryKey: ['tenants'],
+    queryKey: ["tenants"],
     queryFn: async () => {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) return [];
 
       const { data, error } = await supabase
-        .from('tenants')
+        .from("tenants")
         .select(`
           id,
           profile_id,
@@ -74,7 +74,7 @@ const Tenants = () => {
             address
           )
         `)
-        .eq('properties.owner_id', session.session.user.id);
+        .eq("properties.owner_id", session.session.user.id);
 
       if (error) {
         toast({
@@ -92,13 +92,13 @@ const Tenants = () => {
   const handleDelete = async (tenantId: string) => {
     try {
       const { error } = await supabase
-        .from('tenants')
+        .from("tenants")
         .delete()
-        .eq('id', tenantId);
+        .eq("id", tenantId);
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({ queryKey: ["tenants"] });
       toast({
         title: "Success",
         description: "Tenant deleted successfully",
@@ -116,7 +116,7 @@ const Tenants = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
         </div>
       </DashboardLayout>
     );
@@ -142,81 +142,82 @@ const Tenants = () => {
           <p className="text-gray-600">No tenants found. Add your first tenant to get started.</p>
         </div>
       ) : (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Full Name</TableHead>
-              <TableHead>Property Address</TableHead>
-              <TableHead>Lease Period</TableHead>
-              <TableHead>Rent Amount</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tenants.map((tenant: Tenant) => (
-              <TableRow key={tenant.id}>
-                <TableCell className="font-medium">
-                  {tenant.profiles?.full_name || 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {tenant.properties?.address || 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
-                </TableCell>
-                <TableCell>K{tenant.rent_amount}/month</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <CreatePaymentLinkDialog 
-                      propertyId={tenant.property_id} 
-                      tenantId={tenant.id}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/tenants/${tenant.id}/edit`)}
-                    >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the tenant
-                            and remove their data from the system.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(tenant.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    <TenantSummarySheet 
-                      tenantId={tenant.id} 
-                      fullName={tenant.profiles?.full_name || 'N/A'} 
-                    />
-                  </div>
-                </TableCell>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Property Address</TableHead>
+                <TableHead>Lease Period</TableHead>
+                <TableHead>Rent Amount</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {tenants.map((tenant: Tenant) => (
+                <TableRow key={tenant.id}>
+                  <TableCell className="font-medium">
+                    {tenant.profiles?.full_name || "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    {tenant.properties?.address || "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>K{tenant.rent_amount}/month</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <CreatePaymentLinkDialog 
+                        propertyId={tenant.property_id} 
+                        tenantId={tenant.id}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/tenants/${tenant.id}/edit`)}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the tenant
+                              and remove their data from the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(tenant.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      <TenantSummarySheet 
+                        tenantId={tenant.id} 
+                        fullName={tenant.profiles?.full_name || "N/A"} 
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
