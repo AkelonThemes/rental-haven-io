@@ -10,6 +10,8 @@ import Account from "./pages/Account";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import LandlordMaintenance from "./pages/LandlordMaintenance";
+import Properties from "./pages/Properties";
+import Tenants from "./pages/Tenants";
 import { Toaster } from "@/components/ui/toaster";
 import "./App.css";
 
@@ -28,6 +30,8 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/landlord-maintenance" element={<LandlordMaintenance />} />
+        <Route path="/properties" element={<Properties />} />
+        <Route path="/tenants" element={<Tenants />} />
       </Routes>
       <Toaster />
     </Router>
