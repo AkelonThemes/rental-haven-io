@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,13 +17,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 
-interface EditPropertyFormData {
-  address: string;
-  city: string;
-  province: string;
-  zip_code: string;
-  rent_amount: number;
-}
+const formSchema = z.object({
+  address: z.string().min(1, "Address is required"),
+  city: z.string().min(1, "City is required"),
+  province: z.string().min(1, "Province is required"),
+  zip_code: z.string().min(1, "ZIP code is required"),
+  rent_amount: z.number().min(0, "Rent amount must be positive"),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 interface EditPropertyFormProps {
   propertyId: string;
@@ -31,7 +35,16 @@ export function EditPropertyForm({ propertyId }: EditPropertyFormProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const form = useForm<EditPropertyFormData>();
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      address: "",
+      city: "",
+      province: "",
+      zip_code: "",
+      rent_amount: 0,
+    },
+  });
 
   const { data: property, isLoading } = useQuery({
     queryKey: ['property', propertyId],
@@ -67,7 +80,7 @@ export function EditPropertyForm({ propertyId }: EditPropertyFormProps) {
     }
   }, [property, form]);
 
-  async function onSubmit(data: EditPropertyFormData) {
+  async function onSubmit(data: FormData) {
     try {
       const { error } = await supabase
         .from('properties')
@@ -167,11 +180,15 @@ export function EditPropertyForm({ propertyId }: EditPropertyFormProps) {
         <FormField
           control={form.control}
           name="rent_amount"
-          render={({ field }) => (
+          render={({ field: { onChange, ...field }}) => (
             <FormItem>
               <FormLabel>Rent Amount (K)</FormLabel>
               <FormControl>
-                <Input type="number" {...field} />
+                <Input 
+                  type="number" 
+                  onChange={(e) => onChange(parseFloat(e.target.value))}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
