@@ -5,7 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddPropertyDialog } from "@/components/AddPropertyDialog";
-import { PropertyCard } from "@/components/PropertyCard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Property {
   id: string;
@@ -74,10 +81,39 @@ const Properties = () => {
           <p className="text-gray-600">No properties found. Add your first property to get started.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Address</TableHead>
+                <TableHead>City</TableHead>
+                <TableHead>Province</TableHead>
+                <TableHead>Zip Code</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Rent Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {properties.map((property: Property) => (
+                <TableRow key={property.id}>
+                  <TableCell className="font-medium">
+                    {property.address}
+                  </TableCell>
+                  <TableCell>{property.city}</TableCell>
+                  <TableCell>{property.province}</TableCell>
+                  <TableCell>{property.zip_code}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      property.status === 'vacant' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {property.status || 'vacant'}
+                    </span>
+                  </TableCell>
+                  <TableCell>K{property.rent_amount}/month</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </DashboardLayout>
