@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2 } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface ConnectAccountSetupProps {
   profile: Tables<"profiles"> | null;

@@ -60,7 +60,7 @@ const Account = () => {
         <div className="grid gap-6">
           <ProfileDetails profile={profile} />
           {profile?.role === 'landlord' && (
-            <ConnectAccountSetup profile={profile} refetchProfile={refetchProfile} />
+            <ConnectAccountSetup profile={profile} />
           )}
           <SubscriptionSection profile={profile} />
           <PaymentSection profile={profile} />
