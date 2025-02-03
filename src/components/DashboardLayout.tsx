@@ -93,15 +93,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 transform bg-white transition-transform duration-300 ease-in-out lg:hidden",
+          "fixed inset-y-0 left-0 z-50 w-60 transform bg-white transition-transform duration-300 ease-in-out lg:hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center px-6 pt-16">
+          <div className="flex h-16 items-center px-4 pt-16">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
-          <nav className="flex-1 overflow-y-auto px-6 py-4">
+          <nav className="flex-1 overflow-y-auto px-4 py-4">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
               <li>
                 <ul role="list" className="-mx-2 space-y-1">
@@ -148,8 +148,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-60 lg:flex-col">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-4 pb-4">
           <div className="flex h-16 shrink-0 items-center">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
@@ -199,7 +199,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Main content */}
-      <main className="lg:pl-72">
+      <main className="lg:pl-60">
         <div className="px-4 sm:px-6 lg:px-8 py-6 mt-16 lg:mt-0">{children}</div>
       </main>
     </div>
