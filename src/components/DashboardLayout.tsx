@@ -20,33 +20,38 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const handleSignOut = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        localStorage.clear();
-        navigate("/landing");
-        return;
-      }
-
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      // First clear local storage to ensure we remove any stale data
       localStorage.clear();
+      
+      // Attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      // Even if there's an error, we want to redirect to landing
+      // as the user's session might be invalid
       navigate("/landing");
       
-      toast({
-        title: "Signed out successfully",
-        description: "You have been logged out of your account.",
-      });
+      if (error) {
+        console.error("Sign out error:", error);
+        // Show a generic success message as the user is effectively signed out
+        toast({
+          title: "Signed out",
+          description: "You have been logged out of your account.",
+        });
+      } else {
+        toast({
+          title: "Signed out successfully",
+          description: "You have been logged out of your account.",
+        });
+      }
     } catch (error: any) {
       console.error("Sign out error:", error);
+      // Even if there's an error, clear local storage and redirect
       localStorage.clear();
       navigate("/landing");
       
       toast({
-        title: "Sign out completed",
-        description: "You have been logged out, but there was an error in the process.",
-        variant: "destructive",
+        title: "Signed out",
+        description: "You have been logged out of your account.",
       });
     }
   };
