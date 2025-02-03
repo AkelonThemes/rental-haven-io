@@ -53,17 +53,19 @@ const Account = () => {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
           <p className="text-muted-foreground">
-            Manage your account settings and subscription
+            Manage your account settings
           </p>
         </div>
 
         <div className="grid gap-6">
           <ProfileDetails profile={profile} />
           {profile?.role === 'landlord' && (
-            <ConnectAccountSetup profile={profile} />
+            <>
+              <ConnectAccountSetup profile={profile} />
+              <SubscriptionSection profile={profile} />
+              <PaymentSection profile={profile} />
+            </>
           )}
-          <SubscriptionSection profile={profile} />
-          <PaymentSection profile={profile} />
         </div>
       </div>
     </DashboardLayout>
