@@ -16,6 +16,7 @@ import Account from "@/pages/Account";
 import Settings from "@/pages/Settings";
 import PrivateRoute from "@/components/PrivateRoute";
 
+// Create a client
 const queryClient = new QueryClient();
 
 function App() {
