@@ -1,11 +1,22 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users } from "lucide-react";
+import { Users, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
 import { TenantSummarySheet } from "@/components/TenantSummarySheet";
 import { CreatePaymentLinkDialog } from "@/components/payments/CreatePaymentLinkDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -14,6 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface Tenant {
   id: string;
@@ -34,6 +47,8 @@ interface Tenant {
 
 const Tenants = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: tenants = [], isError, isLoading } = useQuery({
     queryKey: ['tenants'],
@@ -73,6 +88,29 @@ const Tenants = () => {
       return data || [];
     },
   });
+
+  const handleDelete = async (tenantId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .delete()
+        .eq('id', tenantId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      toast({
+        title: "Success",
+        description: "Tenant deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting tenant",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -134,6 +172,40 @@ const Tenants = () => {
                         propertyId={tenant.property_id} 
                         tenantId={tenant.id}
                       />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/tenants/${tenant.id}/edit`)}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the tenant
+                              and remove their data from the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(tenant.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       <TenantSummarySheet 
                         tenantId={tenant.id} 
                         fullName={tenant.profiles?.full_name || 'N/A'} 
