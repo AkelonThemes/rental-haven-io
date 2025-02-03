@@ -16,7 +16,7 @@ const Landing = () => {
       if (error) throw error;
       
       if (session) {
-        navigate("/");
+        navigate("/dashboard");
       } else {
         navigate("/auth");
       }
@@ -40,15 +40,13 @@ const Landing = () => {
       if (error) throw error;
 
       if (session) {
-        navigate("/");
+        navigate("/dashboard");
       } else {
         navigate("/auth");
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      // Clear any invalid auth state
       await supabase.auth.signOut();
-      
       navigate("/auth");
     }
   };
@@ -65,9 +63,7 @@ const Landing = () => {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      // Clear any invalid auth state
       await supabase.auth.signOut();
-      
       navigate("/auth");
     }
   };
@@ -80,15 +76,11 @@ const Landing = () => {
         if (error) throw error;
         
         if (session) {
-          navigate("/");
+          navigate("/dashboard");
         }
       } catch (error: any) {
         console.error('Initial auth check error:', error);
-        // Clear any invalid auth state
         await supabase.auth.signOut();
-        
-        // Don't redirect on initial load if there's an error
-        // Let the user see the landing page
       }
     };
 
