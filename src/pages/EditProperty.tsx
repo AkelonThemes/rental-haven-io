@@ -3,9 +3,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { EditPropertyForm } from "@/components/EditPropertyForm";
 
 const EditProperty = () => {
-  const { propertyId } = useParams();
+  const { id } = useParams<{ id: string }>();
 
-  if (!propertyId) {
+  if (!id) {
     return <Navigate to="/properties" replace />;
   }
 
@@ -14,7 +14,7 @@ const EditProperty = () => {
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">Edit Property</h1>
         <div className="max-w-2xl mx-auto">
-          <EditPropertyForm propertyId={propertyId} />
+          <EditPropertyForm propertyId={id} />
         </div>
       </div>
     </DashboardLayout>
