@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { EditPropertyForm } from "@/components/EditPropertyForm";
 
 const EditProperty = () => {
-  const { propertyId } = useParams<{ propertyId: string }>();
+  const { propertyId } = useParams();
 
   if (!propertyId) {
     return <Navigate to="/properties" replace />;

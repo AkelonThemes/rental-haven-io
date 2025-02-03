@@ -59,6 +59,10 @@ const Properties = () => {
     },
   });
 
+  const handleEditClick = (propertyId: string) => {
+    navigate(`/properties/${propertyId}/edit`);
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -68,10 +72,6 @@ const Properties = () => {
       </DashboardLayout>
     );
   }
-
-  const handleEditClick = (propertyId: string) => {
-    navigate(`/properties/${propertyId}/edit`);
-  };
 
   return (
     <DashboardLayout>
