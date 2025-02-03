@@ -41,7 +41,6 @@ export default function TenantDashboard() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return null;
 
-        // Get the tenant ID for the current user
         const { data: tenant } = await supabase
           .from('tenants')
           .select('id')
@@ -50,7 +49,6 @@ export default function TenantDashboard() {
 
         if (!tenant) return null;
 
-        // Get the latest payments for this tenant
         const { data: payments, error } = await supabase
           .from('payments')
           .select(`
@@ -81,8 +79,31 @@ export default function TenantDashboard() {
         return null;
       }
     },
-    refetchInterval: 5000, // Refetch every 5 seconds to check for status updates
   });
+
+  // Subscribe to payment status changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('payment-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'payments',
+          filter: `tenant_id=eq.${latestPayments?.[0]?.id}`,
+        },
+        (payload) => {
+          console.log('Payment updated:', payload);
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [latestPayments, refetch]);
 
   const handlePaymentClick = async (payment: Payment) => {
     if (!payment.id) {
