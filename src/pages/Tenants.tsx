@@ -1,10 +1,10 @@
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
+import { TenantSummarySheet } from "@/components/TenantSummarySheet";
 import {
   Table,
   TableBody,
@@ -111,6 +111,7 @@ const Tenants = () => {
                 <TableHead>Property Address</TableHead>
                 <TableHead>Lease Period</TableHead>
                 <TableHead>Rent Amount</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -126,6 +127,12 @@ const Tenants = () => {
                     {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
                   </TableCell>
                   <TableCell>K{tenant.rent_amount}/month</TableCell>
+                  <TableCell className="text-right">
+                    <TenantSummarySheet 
+                      tenantId={tenant.id} 
+                      fullName={tenant.profiles?.full_name || 'N/A'} 
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
