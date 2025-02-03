@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2 } from "lucide-react";
+import { Building2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddPropertyDialog } from "@/components/AddPropertyDialog";
 import { PropertySummarySheet } from "@/components/PropertySummarySheet";
+import { DeletePropertyDialog } from "@/components/DeletePropertyDialog";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useNavigate } from "react-router-dom";
 
 interface Property {
   id: string;
@@ -27,6 +30,7 @@ interface Property {
 
 const Properties = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { data: properties = [], isError, isLoading } = useQuery({
     queryKey: ['properties'],
@@ -116,7 +120,20 @@ const Properties = () => {
                   </TableCell>
                   <TableCell>K{property.rent_amount}/month</TableCell>
                   <TableCell className="text-right">
-                    <PropertySummarySheet propertyId={property.id} address={property.address} />
+                    <div className="flex items-center justify-end gap-2">
+                      <PropertySummarySheet propertyId={property.id} address={property.address} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/properties/${property.id}/edit`)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <DeletePropertyDialog
+                        propertyId={property.id}
+                        hasTenants={property.tenants?.length > 0}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
