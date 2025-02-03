@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { EditPropertyForm } from "@/components/EditPropertyForm";
 
@@ -6,7 +6,7 @@ const EditProperty = () => {
   const { propertyId } = useParams<{ propertyId: string }>();
 
   if (!propertyId) {
-    return <div>Property ID is required</div>;
+    return <Navigate to="/properties" replace />;
   }
 
   return (
