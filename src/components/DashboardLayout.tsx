@@ -98,11 +98,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center px-4 pt-16">
+          <div className="flex h-14 items-center px-3 pt-16">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
-          <nav className="flex-1 overflow-y-auto px-4 py-4">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
+          <nav className="flex-1 overflow-y-auto px-3 py-2">
+            <ul role="list" className="flex flex-1 flex-col gap-y-4">
               <li>
                 <ul role="list" className="-mx-2 space-y-1">
                   {navigation.map((item) => (
@@ -119,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       >
                         <item.icon
                           className={cn(
-                            "h-6 w-6 shrink-0",
+                            "h-5 w-5 shrink-0",
                             window.location.pathname === item.href
                               ? "text-primary"
                               : "text-gray-400 group-hover:text-primary"
@@ -138,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className="w-full justify-start gap-x-3"
                   onClick={handleSignOut}
                 >
-                  <LogOut className="h-6 w-6 text-gray-400" />
+                  <LogOut className="h-5 w-5 text-gray-400" />
                   Sign out
                 </Button>
               </li>
@@ -149,12 +149,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-60 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-4 pb-4">
-          <div className="flex h-16 shrink-0 items-center">
+        <div className="flex grow flex-col gap-y-3 overflow-y-auto border-r border-gray-200 bg-white px-3 pb-2">
+          <div className="flex h-14 shrink-0 items-center">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
           <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
+            <ul role="list" className="flex flex-1 flex-col gap-y-4">
               <li>
                 <ul role="list" className="-mx-2 space-y-1">
                   {navigation.map((item) => (
@@ -170,7 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       >
                         <item.icon
                           className={cn(
-                            "h-6 w-6 shrink-0",
+                            "h-5 w-5 shrink-0",
                             window.location.pathname === item.href
                               ? "text-primary"
                               : "text-gray-400 group-hover:text-primary"
@@ -189,7 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className="w-full justify-start gap-x-3"
                   onClick={handleSignOut}
                 >
-                  <LogOut className="h-6 w-6 text-gray-400" />
+                  <LogOut className="h-5 w-5 text-gray-400" />
                   Sign out
                 </Button>
               </li>
