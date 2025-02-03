@@ -16,15 +16,19 @@ import {
 
 interface Tenant {
   id: string;
-  profile: {
-    full_name: string | null;
-  } | null;
-  property: {
-    address: string;
-  } | null;
+  profile_id: string;
+  property_id: string;
   lease_start_date: string;
   lease_end_date: string;
   rent_amount: number;
+  profiles: {
+    id: string;
+    full_name: string | null;
+  };
+  properties: {
+    id: string;
+    address: string;
+  };
 }
 
 const Tenants = () => {
@@ -45,11 +49,11 @@ const Tenants = () => {
           lease_start_date,
           lease_end_date,
           rent_amount,
-          profiles:profile_id (
+          profiles (
             id,
             full_name
           ),
-          properties:property_id (
+          properties (
             id,
             address
           )
@@ -110,13 +114,13 @@ const Tenants = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tenants.map((tenant) => (
+              {tenants.map((tenant: Tenant) => (
                 <TableRow key={tenant.id}>
                   <TableCell className="font-medium">
-                    {tenant.profile?.full_name || 'N/A'}
+                    {tenant.profiles?.full_name || 'N/A'}
                   </TableCell>
                   <TableCell>
-                    {tenant.property?.address || 'N/A'}
+                    {tenant.properties?.address || 'N/A'}
                   </TableCell>
                   <TableCell>
                     {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
