@@ -55,7 +55,11 @@ export function CreatePaymentLinkDialog({ propertyId, tenantId }: { propertyId: 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button 
+          variant="outline" 
+          size="icon"
+          className="bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-600 hover:text-purple-700"
+        >
           <CreditCard className="h-4 w-4" />
         </Button>
       </DialogTrigger>

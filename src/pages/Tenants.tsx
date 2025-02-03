@@ -147,7 +147,7 @@ const Tenants = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Full Name</TableHead>
-                <TableHead>Property Address</TableHead>
+                <TableHead>Property</TableHead>
                 <TableHead>Lease Period</TableHead>
                 <TableHead>Rent Amount</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -177,12 +177,17 @@ const Tenants = () => {
                         variant="outline"
                         size="icon"
                         onClick={() => navigate(`/tenants/${tenant.id}/edit`)}
+                        className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-600 hover:text-blue-700"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="icon">
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            className="bg-red-50 hover:bg-red-100 border-red-200 text-red-600 hover:text-red-700"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
