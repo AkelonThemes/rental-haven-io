@@ -15,41 +15,24 @@ serve(async (req) => {
   try {
     console.log('Starting payment process...');
 
-    // Get auth token from request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('No authorization header found');
-      throw new Error('No authorization header');
-    }
-
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase configuration');
-      throw new Error('Server configuration error');
-    }
-
-    if (!stripeSecretKey) {
-      console.error('Missing Stripe configuration');
-      throw new Error('Stripe configuration error');
+    if (!supabaseUrl || !supabaseKey || !stripeSecretKey) {
+      throw new Error('Missing required configuration');
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     // Validate request body
-    const body = await req.json().catch(() => null);
+    const body = await req.json();
     console.log('Request body:', body);
 
     if (!body?.payment_id) {
-      console.error('No payment_id provided in request body');
       throw new Error('Payment ID is required');
     }
-
-    const { payment_id } = body;
-    console.log('Processing payment for payment_id:', payment_id);
 
     // Get payment details with related data
     const { data: payment, error: paymentError } = await supabaseClient
@@ -62,13 +45,11 @@ serve(async (req) => {
         property:properties(
           address,
           owner:profiles(
-            stripe_connect_id,
-            stripe_connect_status,
-            stripe_connect_onboarding_completed
+            full_name
           )
         )
       `)
-      .eq('id', payment_id)
+      .eq('id', body.payment_id)
       .single();
 
     if (paymentError) {
@@ -77,44 +58,22 @@ serve(async (req) => {
     }
 
     if (!payment) {
-      console.error('Payment not found for ID:', payment_id);
       throw new Error('Payment not found');
     }
 
     console.log('Payment details:', payment);
 
-    // Validate required payment data
+    // Validate payment amount
     if (!payment.amount || payment.amount <= 0) {
-      console.error('Invalid payment amount:', payment.amount);
       throw new Error('Invalid payment amount');
     }
 
-    const landlordStripeAccountId = payment.property?.owner?.stripe_connect_id;
-    const onboardingCompleted = payment.property?.owner?.stripe_connect_onboarding_completed;
-    const connectStatus = payment.property?.owner?.stripe_connect_status;
-
-    if (!landlordStripeAccountId) {
-      console.error('Landlord Stripe account not found');
-      throw new Error('Landlord has not set up their Stripe Connect account');
-    }
-
-    if (!onboardingCompleted) {
-      console.error('Landlord Stripe onboarding not completed');
-      throw new Error('Landlord has not completed Stripe onboarding');
-    }
-
-    if (connectStatus !== 'active') {
-      console.error('Landlord Stripe account not active:', connectStatus);
-      throw new Error(`Landlord's Stripe account status is ${connectStatus}. Please contact support.`);
-    }
-
-    // Get user information
+    // Get user information for the tenant
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
+      req.headers.get('Authorization')?.replace('Bearer ', '') || ''
     );
 
     if (userError || !user) {
-      console.error('Error getting user:', userError);
       throw new Error('Unauthorized');
     }
 
@@ -132,7 +91,6 @@ serve(async (req) => {
 
     console.log('Creating Stripe Checkout session...');
     console.log('Amount:', payment.amount, 'Platform fee:', platformFeeAmount);
-    console.log('Landlord Stripe Account:', landlordStripeAccountId);
 
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -153,16 +111,10 @@ serve(async (req) => {
       mode: 'payment',
       success_url: `${req.headers.get('origin')}/payments?success=true`,
       cancel_url: `${req.headers.get('origin')}/payments?canceled=true`,
-      payment_intent_data: {
-        application_fee_amount: platformFeeAmount,
-        transfer_data: {
-          destination: landlordStripeAccountId,
-        },
-        metadata: {
-          payment_id: payment.id,
-          property_id: payment.property_id,
-          tenant_id: payment.tenant_id,
-        },
+      metadata: {
+        payment_id: payment.id,
+        property_id: payment.property_id,
+        tenant_id: payment.tenant_id,
       },
       customer_email: user.email,
     });
@@ -176,13 +128,11 @@ serve(async (req) => {
         .update({
           stripe_payment_id: session.payment_intent.toString(),
           platform_fee_amount: platformFeeAmount,
-          landlord_stripe_account_id: landlordStripeAccountId,
         })
-        .eq('id', payment_id);
+        .eq('id', body.payment_id);
 
       if (updateError) {
         console.error('Error updating payment record:', updateError);
-        // Continue despite update error - the payment can still proceed
       }
     }
 

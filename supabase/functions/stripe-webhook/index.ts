@@ -1,9 +1,6 @@
-// @ts-ignore: Deno imports
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore: Deno imports
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&no-check";
-// @ts-ignore: Deno imports
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target=deno&no-check";
+import Stripe from "https://esm.sh/stripe@14.21.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,12 +53,13 @@ serve(async (req) => {
 
         console.log('Payment succeeded:', paymentId);
 
-        // Update payment status
+        // Update payment status and record payment date
         const { error: updateError } = await supabaseClient
           .from('payments')
           .update({
             status: 'completed',
             payment_date: new Date().toISOString(),
+            landlord_payout_status: 'pending',
           })
           .eq('id', paymentId);
 
@@ -75,7 +73,6 @@ serve(async (req) => {
 
         console.log('Payment failed:', paymentId);
 
-        // Update payment status
         const { error: updateError } = await supabaseClient
           .from('payments')
           .update({

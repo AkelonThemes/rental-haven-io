@@ -65,6 +65,9 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          landlord_payout_amount: number | null
+          landlord_payout_date: string | null
+          landlord_payout_status: string | null
           landlord_stripe_account_id: string | null
           payer_profile_id: string | null
           payment_date: string | null
@@ -86,6 +89,9 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          landlord_payout_amount?: number | null
+          landlord_payout_date?: string | null
+          landlord_payout_status?: string | null
           landlord_stripe_account_id?: string | null
           payer_profile_id?: string | null
           payment_date?: string | null
@@ -107,6 +113,9 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          landlord_payout_amount?: number | null
+          landlord_payout_date?: string | null
+          landlord_payout_status?: string | null
           landlord_stripe_account_id?: string | null
           payer_profile_id?: string | null
           payment_date?: string | null
@@ -163,9 +172,6 @@ export type Database = {
           has_completed_signup: boolean | null
           id: string
           role: string | null
-          stripe_connect_id: string | null
-          stripe_connect_onboarding_completed: boolean | null
-          stripe_connect_status: string | null
           updated_at: string
         }
         Insert: {
@@ -175,9 +181,6 @@ export type Database = {
           has_completed_signup?: boolean | null
           id: string
           role?: string | null
-          stripe_connect_id?: string | null
-          stripe_connect_onboarding_completed?: boolean | null
-          stripe_connect_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -187,9 +190,6 @@ export type Database = {
           has_completed_signup?: boolean | null
           id?: string
           role?: string | null
-          stripe_connect_id?: string | null
-          stripe_connect_onboarding_completed?: boolean | null
-          stripe_connect_status?: string | null
           updated_at?: string
         }
         Relationships: []
