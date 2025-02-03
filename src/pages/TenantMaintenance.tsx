@@ -12,13 +12,13 @@ export default function TenantMaintenance() {
   const { data: tenant } = useQuery({
     queryKey: ["tenant"],
     queryFn: async () => {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
 
       const { data: tenant, error } = await supabase
         .from("tenants")
         .select("id, property_id")
-        .eq("profile_id", session.session.user.id)
+        .eq("profile_id", session.user.id)
         .single();
 
       if (error) throw error;
@@ -58,8 +58,8 @@ export default function TenantMaintenance() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       </DashboardLayout>
     );
