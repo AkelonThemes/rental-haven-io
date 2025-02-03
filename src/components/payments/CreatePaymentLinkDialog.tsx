@@ -6,39 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Link, ExternalLink } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Link } from "lucide-react";
 
 interface PaymentLinkFormData {
   amount: number;
-  tenant_id: string;
-  property_id: string;
   rent_period_start: string;
   rent_period_end: string;
 }
 
-export function CreatePaymentLinkDialog({ propertyId }: { propertyId: string }) {
+export function CreatePaymentLinkDialog({ propertyId, tenantId }: { propertyId: string; tenantId: string }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const form = useForm<PaymentLinkFormData>();
-
-  // Fetch tenants for the property
-  const { data: tenants } = useQuery({
-    queryKey: ['tenants', propertyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select(`
-          id,
-          profile:profiles(full_name)
-        `)
-        .eq('property_id', propertyId);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!propertyId,
-  });
 
   const onSubmit = async (data: PaymentLinkFormData) => {
     try {
@@ -50,7 +29,7 @@ export function CreatePaymentLinkDialog({ propertyId }: { propertyId: string }) 
           payment_type: 'rent',
           status: 'pending',
           property_id: propertyId,
-          tenant_id: data.tenant_id,
+          tenant_id: tenantId,
           rent_period_start: data.rent_period_start,
           rent_period_end: data.rent_period_end,
         }]);
@@ -88,27 +67,6 @@ export function CreatePaymentLinkDialog({ propertyId }: { propertyId: string }) 
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="tenant_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tenant</FormLabel>
-                  <select
-                    {...field}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  >
-                    <option value="">Select tenant</option>
-                    {tenants?.map((tenant) => (
-                      <option key={tenant.id} value={tenant.id}>
-                        {tenant.profile?.full_name || 'Unnamed Tenant'}
-                      </option>
-                    ))}
-                  </select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="amount"
