@@ -19,9 +19,18 @@ export default function TenantMaintenance() {
         .from("tenants")
         .select("id, property_id")
         .eq("profile_id", session.user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching tenant:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch tenant information",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
       return tenant;
     },
   });
@@ -42,6 +51,7 @@ export default function TenantMaintenance() {
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error("Error fetching maintenance requests:", error);
         toast({
           title: "Error",
           description: "Failed to fetch maintenance requests",
@@ -65,6 +75,19 @@ export default function TenantMaintenance() {
     );
   }
 
+  if (!tenant) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-8 space-y-4">
+          <Wrench className="w-12 h-12 text-gray-400 mx-auto" />
+          <p className="text-gray-600">
+            No tenant information found. Please contact your landlord.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="mb-8 space-y-4">
@@ -77,13 +100,11 @@ export default function TenantMaintenance() {
               Submit and track maintenance requests for your property
             </p>
           </div>
-          {tenant && (
-            <CreateMaintenanceRequestDialog
-              tenantId={tenant.id}
-              propertyId={tenant.property_id}
-              onSuccess={refetch}
-            />
-          )}
+          <CreateMaintenanceRequestDialog
+            tenantId={tenant.id}
+            propertyId={tenant.property_id}
+            onSuccess={refetch}
+          />
         </div>
 
         {requests.length === 0 ? (
