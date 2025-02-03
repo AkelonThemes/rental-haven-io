@@ -1,17 +1,20 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Properties from "./pages/Properties";
-import EditProperty from "./pages/EditProperty";
-import Tenants from "./pages/Tenants";
-import Payments from "./pages/Payments";
-import MaintenanceRequests from "./pages/MaintenanceRequests";
-import Settings from "./pages/Settings";
-import PrivateRoute from "./components/PrivateRoute";
-import { ThemeProvider } from "./components/theme-provider";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "next-themes";
+import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Dashboard from "@/pages/Dashboard";
+import Properties from "@/pages/Properties";
+import EditProperty from "@/pages/EditProperty";
+import Tenants from "@/pages/Tenants";
+import EditTenant from "@/pages/EditTenant";
+import Payments from "@/pages/Payments";
+import LandlordMaintenance from "@/pages/LandlordMaintenance";
+import Account from "@/pages/Account";
+import Settings from "@/pages/Settings";
+import PrivateRoute from "@/components/PrivateRoute";
 
 const queryClient = new QueryClient();
 
@@ -19,12 +22,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <Router>
+        <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route
-              path="/"
+              path="/dashboard"
               element={
                 <PrivateRoute>
                   <Dashboard />
@@ -40,7 +44,7 @@ function App() {
               }
             />
             <Route
-              path="/properties/:propertyId/edit"
+              path="/properties/:id/edit"
               element={
                 <PrivateRoute>
                   <EditProperty />
@@ -56,6 +60,14 @@ function App() {
               }
             />
             <Route
+              path="/tenants/:id/edit"
+              element={
+                <PrivateRoute>
+                  <EditTenant />
+                </PrivateRoute>
+              }
+            />
+            <Route
               path="/payments"
               element={
                 <PrivateRoute>
@@ -67,7 +79,15 @@ function App() {
               path="/maintenance"
               element={
                 <PrivateRoute>
-                  <MaintenanceRequests />
+                  <LandlordMaintenance />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/account"
+              element={
+                <PrivateRoute>
+                  <Account />
                 </PrivateRoute>
               }
             />
@@ -80,8 +100,8 @@ function App() {
               }
             />
           </Routes>
-        </Router>
-        <Toaster />
+          <Toaster />
+        </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );
