@@ -1,3 +1,4 @@
+import React from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,8 +28,8 @@ export default function EditTenant() {
           lease_end_date,
           rent_amount,
           profiles (
-            full_name,
-            email
+            id,
+            full_name
           )
         `)
         .eq('id', id)
@@ -55,12 +56,10 @@ export default function EditTenant() {
     },
   });
 
-  // Set form values when tenant data is loaded
   React.useEffect(() => {
     if (tenant) {
       form.reset({
         full_name: tenant.profiles.full_name || '',
-        email: tenant.profiles.email || '',
         property_id: tenant.property_id,
         lease_start_date: tenant.lease_start_date,
         lease_end_date: tenant.lease_end_date,
