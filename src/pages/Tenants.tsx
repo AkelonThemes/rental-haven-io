@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
-import { CreatePaymentLinkDialog } from "@/components/payments/CreatePaymentLinkDialog";
 import {
   Table,
   TableBody,
@@ -31,7 +30,7 @@ interface Tenant {
 const Tenants = () => {
   const { toast } = useToast();
 
-  const { data: tenants = [], isError, refetch, isLoading } = useQuery({
+  const { data: tenants = [], isError, isLoading } = useQuery({
     queryKey: ['tenants'],
     queryFn: async () => {
       const { data: session } = await supabase.auth.getSession();
@@ -52,9 +51,7 @@ const Tenants = () => {
           ),
           properties:property_id (
             id,
-            address,
-            city,
-            province
+            address
           )
         `)
         .eq('properties.owner_id', session.session.user.id);
@@ -68,20 +65,8 @@ const Tenants = () => {
         throw error;
       }
 
-      if (!data) return [];
-
-      return data.map(tenant => ({
-        id: tenant.id,
-        profile: tenant.profiles,
-        property: tenant.properties,
-        lease_start_date: tenant.lease_start_date,
-        lease_end_date: tenant.lease_end_date,
-        rent_amount: tenant.rent_amount
-      }));
+      return data || [];
     },
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    staleTime: 30000,
   });
 
   if (isLoading) {
@@ -122,7 +107,6 @@ const Tenants = () => {
                 <TableHead>Property Address</TableHead>
                 <TableHead>Lease Period</TableHead>
                 <TableHead>Rent Amount</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -138,9 +122,6 @@ const Tenants = () => {
                     {new Date(tenant.lease_start_date).toLocaleDateString()} - {new Date(tenant.lease_end_date).toLocaleDateString()}
                   </TableCell>
                   <TableCell>K{tenant.rent_amount}/month</TableCell>
-                  <TableCell className="text-right">
-                    <CreatePaymentLinkDialog propertyId={tenant.property?.id || ''} />
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
