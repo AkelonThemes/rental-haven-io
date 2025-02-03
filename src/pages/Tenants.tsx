@@ -5,6 +5,7 @@ import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
 import { TenantSummarySheet } from "@/components/TenantSummarySheet";
+import { CreatePaymentLinkDialog } from "@/components/payments/CreatePaymentLinkDialog";
 import {
   Table,
   TableBody,
@@ -128,10 +129,13 @@ const Tenants = () => {
                   </TableCell>
                   <TableCell>K{tenant.rent_amount}/month</TableCell>
                   <TableCell className="text-right">
-                    <TenantSummarySheet 
-                      tenantId={tenant.id} 
-                      fullName={tenant.profiles?.full_name || 'N/A'} 
-                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <CreatePaymentLinkDialog propertyId={tenant.property_id} />
+                      <TenantSummarySheet 
+                        tenantId={tenant.id} 
+                        fullName={tenant.profiles?.full_name || 'N/A'} 
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
