@@ -40,6 +40,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="absolute top-4 left-4">
+        <Link to="/" className="text-gray-600 hover:text-gray-900">
+          ← Back to Home
+        </Link>
+      </div>
       <Card className="w-[350px]">
         <CardHeader>
           <CardTitle>Login</CardTitle>

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -52,6 +52,11 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="absolute top-4 left-4">
+        <Link to="/" className="text-gray-600 hover:text-gray-900">
+          ← Back to Home
+        </Link>
+      </div>
       <Card className="w-[350px]">
         <CardHeader>
           <CardTitle>Register</CardTitle>
@@ -95,6 +100,12 @@ export default function Register() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Loading..." : "Register"}
             </Button>
+            <div className="text-center text-sm text-gray-600 mt-4">
+              Already have an account?{" "}
+              <Link to="/login" className="text-primary hover:underline">
+                Sign in
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
