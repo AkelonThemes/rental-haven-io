@@ -1,40 +1,89 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Landing from "./pages/Landing";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import TenantDashboard from "./pages/TenantDashboard";
-import TenantMaintenance from "./pages/TenantMaintenance";
-import TenantPayments from "./pages/TenantPayments";
-import Account from "./pages/Account";
-import Settings from "./pages/Settings";
-import Notifications from "./pages/Notifications";
-import LandlordMaintenance from "./pages/LandlordMaintenance";
-import Properties from "./pages/Properties";
-import Tenants from "./pages/Tenants";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import "./App.css";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import Properties from "./pages/Properties";
+import EditProperty from "./pages/EditProperty";
+import Tenants from "./pages/Tenants";
+import Payments from "./pages/Payments";
+import MaintenanceRequests from "./pages/MaintenanceRequests";
+import Settings from "./pages/Settings";
+import PrivateRoute from "./components/PrivateRoute";
+import { ThemeProvider } from "./components/theme-provider";
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/landing" element={<Landing />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/tenant-dashboard" element={<TenantDashboard />} />
-        <Route path="/tenant-maintenance" element={<TenantMaintenance />} />
-        <Route path="/tenant-payments" element={<TenantPayments />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/landlord-maintenance" element={<LandlordMaintenance />} />
-        <Route path="/properties" element={<Properties />} />
-        <Route path="/tenants" element={<Tenants />} />
-      </Routes>
-      <Toaster />
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/properties"
+              element={
+                <PrivateRoute>
+                  <Properties />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/properties/:propertyId/edit"
+              element={
+                <PrivateRoute>
+                  <EditProperty />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tenants"
+              element={
+                <PrivateRoute>
+                  <Tenants />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <PrivateRoute>
+                  <Payments />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/maintenance"
+              element={
+                <PrivateRoute>
+                  <MaintenanceRequests />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute>
+                  <Settings />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </Router>
+        <Toaster />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
