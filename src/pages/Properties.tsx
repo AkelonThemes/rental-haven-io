@@ -1,10 +1,10 @@
-import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
+import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddPropertyDialog } from "@/components/AddPropertyDialog";
+import { PropertySummarySheet } from "@/components/PropertySummarySheet";
 import {
   Table,
   TableBody,
@@ -91,6 +91,7 @@ const Properties = () => {
                 <TableHead>Zip Code</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Rent Amount</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -110,6 +111,9 @@ const Properties = () => {
                     </span>
                   </TableCell>
                   <TableCell>K{property.rent_amount}/month</TableCell>
+                  <TableCell className="text-right">
+                    <PropertySummarySheet propertyId={property.id} address={property.address} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
