@@ -4,8 +4,9 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useRole } from "@/hooks/use-role";
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const { role } = useRole();
+  const { role, loading: roleLoading } = useRole();
   const location = useLocation();
 
   useEffect(() => {
@@ -15,11 +16,17 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
         setUser(user);
       } catch (error) {
         console.error("Error checking auth status:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     checkUser();
   }, []);
+
+  if (loading || roleLoading) {
+    return <div>Loading...</div>;
+  }
 
   if (!user) {
     return <Navigate to="/login" />;

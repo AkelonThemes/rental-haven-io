@@ -59,18 +59,18 @@ export function DashboardSidebarContent({
               })}
             </ul>
           </li>
+          <li className="mt-auto">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-x-3"
+              onClick={onSignOut}
+            >
+              <LogOut className="h-5 w-5 text-gray-400" />
+              Sign out
+            </Button>
+          </li>
         </ul>
       </nav>
-      <div className="mt-auto border-t p-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-x-3"
-          onClick={onSignOut}
-        >
-          <LogOut className="h-5 w-5 text-gray-400" />
-          Sign out
-        </Button>
-      </div>
     </div>
   );
 }
