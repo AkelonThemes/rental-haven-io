@@ -18,9 +18,6 @@ interface Payment {
   rent_period_end: string | null;
   created_at: string;
   stripe_payment_id: string | null;
-  property: {
-    address: string;
-  } | null;
 }
 
 interface PaymentTableProps {
@@ -34,7 +31,6 @@ export function PaymentTable({ payments, onPaymentClick }: PaymentTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Property</TableHead>
             <TableHead>Period</TableHead>
             <TableHead>Amount</TableHead>
             <TableHead>Status</TableHead>
@@ -45,7 +41,6 @@ export function PaymentTable({ payments, onPaymentClick }: PaymentTableProps) {
         <TableBody>
           {payments.map((payment) => (
             <TableRow key={payment.id}>
-              <TableCell>{payment.property?.address || 'Unknown Property'}</TableCell>
               <TableCell>
                 {payment.rent_period_start && payment.rent_period_end ? (
                   `${new Date(payment.rent_period_start).toLocaleDateString()} - ${new Date(payment.rent_period_end).toLocaleDateString()}`
