@@ -11,8 +11,13 @@ export function useRole() {
     async function fetchRole() {
       try {
         console.log('Fetching user role...');
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw sessionError;
+        }
+
         if (!session) {
           console.log('No session found');
           setRole(null);
@@ -22,20 +27,20 @@ export function useRole() {
 
         console.log('Session found, user ID:', session.user.id);
 
-        const { data: profile, error } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, email')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
           toast({
             title: "Error fetching user role",
-            description: error.message,
+            description: profileError.message,
             variant: "destructive",
           });
-          throw error;
+          throw profileError;
         }
 
         if (!profile) {
@@ -60,9 +65,10 @@ export function useRole() {
             throw insertError;
           }
 
+          console.log('Created new landlord profile');
           setRole('landlord');
         } else {
-          console.log('Profile found, role:', profile.role);
+          console.log('Profile found:', profile);
           setRole(profile.role as 'landlord' | 'tenant');
         }
       } catch (error: any) {
