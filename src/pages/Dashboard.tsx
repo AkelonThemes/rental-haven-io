@@ -29,35 +29,8 @@ export default function Dashboard() {
 
         console.log('Current user ID:', user.id);
 
-        // First, let's check if we can get the user's profile
-        const { data: userProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError);
-          throw profileError;
-        }
-
-        console.log('User profile:', userProfile);
-
-        // Now let's verify we can fetch the properties
-        const { data: properties, error: propertiesError } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('owner_id', user.id);
-
-        if (propertiesError) {
-          console.error('Error fetching properties:', propertiesError);
-          throw propertiesError;
-        }
-
-        console.log('Basic properties data:', properties);
-
-        // If we get properties, then let's fetch with the full relation
-        const { data: propertiesWithTenants, error: fullQueryError } = await supabase
+        // Fetch properties with tenants in a single query
+        const { data: propertiesWithTenants, error: queryError } = await supabase
           .from('properties')
           .select(`
             *,
@@ -74,22 +47,17 @@ export default function Dashboard() {
           `)
           .eq('owner_id', user.id);
 
-        if (fullQueryError) {
-          console.error('Error fetching properties with tenants:', fullQueryError);
+        if (queryError) {
+          console.error('Error fetching properties with tenants:', queryError);
           toast({
             title: "Error fetching properties",
-            description: fullQueryError.message,
+            description: queryError.message,
             variant: "destructive",
           });
-          throw fullQueryError;
+          throw queryError;
         }
 
-        console.log('Properties with tenants:', propertiesWithTenants);
-
-        // Log each property's tenants for debugging
-        propertiesWithTenants?.forEach((property, index) => {
-          console.log(`Property ${index + 1} (${property.id}) tenants:`, property.tenants);
-        });
+        console.log('Raw properties with tenants data:', propertiesWithTenants);
 
         // Calculate dashboard stats
         const totalRent = propertiesWithTenants?.reduce((sum, property) => {
@@ -111,7 +79,7 @@ export default function Dashboard() {
           }
         };
 
-        console.log('Final processed dashboard data:', processedData);
+        console.log('Processed dashboard data:', processedData);
         return processedData;
       } catch (error: any) {
         console.error('Error in landlord dashboard query:', error);
