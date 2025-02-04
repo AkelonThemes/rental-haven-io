@@ -34,18 +34,21 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
   // Redirect tenants to tenant-specific routes
   if (role === 'tenant') {
-    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/account', '/settings'];
+    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/account', '/settings', '/tenant-payments'];
     const currentPath = location.pathname;
     
-    // Allow access if the current path is in tenantRoutes
-    if (tenantRoutes.includes(currentPath)) {
+    // If the current path is /settings or /account, allow access
+    if (currentPath === '/settings' || currentPath === '/account') {
       return <>{children}</>;
     }
     
-    // If accessing a non-tenant route, redirect to tenant dashboard
-    if (currentPath !== '/') {
-      return <Navigate to="/tenant-dashboard" replace />;
+    // If the current path starts with any of the tenant routes, allow access
+    if (tenantRoutes.some(route => currentPath.startsWith(route))) {
+      return <>{children}</>;
     }
+    
+    // If accessing any other route, redirect to tenant dashboard
+    return <Navigate to="/tenant-dashboard" replace />;
   }
 
   // Redirect landlords to landlord-specific routes
