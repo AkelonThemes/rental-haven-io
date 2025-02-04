@@ -36,12 +36,10 @@ export default function Dashboard() {
             *,
             tenants (
               id,
-              profile_id,
+              rent_amount,
               lease_start_date,
               lease_end_date,
-              rent_amount,
               profiles (
-                id,
                 full_name,
                 email
               )
@@ -51,11 +49,6 @@ export default function Dashboard() {
 
         if (propertiesError) {
           console.error('Error fetching properties:', propertiesError);
-          toast({
-            title: "Error fetching properties",
-            description: propertiesError.message,
-            variant: "destructive",
-          });
           throw propertiesError;
         }
 
