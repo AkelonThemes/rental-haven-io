@@ -43,14 +43,43 @@ export default function TenantDashboard() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return null;
 
-        const { data: tenant } = await supabase
+        // First get the user's profile to check their role
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) throw profileError;
+
+        if (profile.role !== 'tenant') {
+          toast({
+            title: "Access Denied",
+            description: "This dashboard is only accessible to tenants.",
+            variant: "destructive",
+          });
+          navigate('/dashboard');
+          return null;
+        }
+
+        // Get tenant details for the current user
+        const { data: tenant, error: tenantError } = await supabase
           .from('tenants')
           .select('id')
           .eq('profile_id', session.user.id)
-          .maybeSingle();
+          .single();
 
-        if (!tenant) return null;
+        if (tenantError) {
+          console.error('Error fetching tenant:', tenantError);
+          return null;
+        }
 
+        if (!tenant) {
+          console.log('No tenant record found for this user');
+          return null;
+        }
+
+        // Now fetch payments for this tenant
         const { data: payments, error } = await supabase
           .from('payments')
           .select(`
@@ -73,6 +102,7 @@ export default function TenantDashboard() {
         if (error) throw error;
         return payments;
       } catch (error: any) {
+        console.error('Error in payment query:', error);
         toast({
           title: "Error fetching payment data",
           description: error.message,
@@ -91,7 +121,6 @@ export default function TenantDashboard() {
         description: "Your payment has been processed successfully.",
         variant: "default",
       });
-      // Clear the success parameter from URL
       navigate('/dashboard', { replace: true });
     }
   }, [success, toast, navigate]);
