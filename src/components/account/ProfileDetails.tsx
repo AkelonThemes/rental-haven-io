@@ -19,13 +19,14 @@ export const ProfileDetails = ({ profile, role }: ProfileDetailsProps) => {
       const { data: tenant, error } = await supabase
         .from('tenants')
         .select(`
+          id,
           property:properties (
             id,
             address
           )
         `)
         .eq('profile_id', profile.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching tenant property:', error);
