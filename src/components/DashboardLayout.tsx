@@ -2,22 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { useRole } from "@/hooks/use-role";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  Receipt,
-  Wrench,
-  UserCircle,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
+import { Building2 } from "lucide-react";
+import { DashboardSidebarContent } from "./dashboard/DashboardSidebarContent";
+import { MobileHeader } from "./dashboard/MobileHeader";
+import { getLandlordMenuItems, getTenantMenuItems } from "./dashboard/DashboardMenuItems";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -25,24 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { role } = useRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const getLandlordNavigation = () => [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Properties", href: "/properties", icon: Building2 },
-    { name: "Tenants", href: "/tenants", icon: Users },
-    { name: "Payments", href: "/payments", icon: Receipt },
-    { name: "Maintenance", href: "/maintenance", icon: Wrench },
-    { name: "Account", href: "/account", icon: UserCircle },
-    { name: "Settings", href: "/settings", icon: Settings },
-  ];
-
-  const getTenantNavigation = () => [
-    { name: "Dashboard", href: "/tenant-dashboard", icon: LayoutDashboard },
-    { name: "Maintenance", href: "/tenant-maintenance", icon: Wrench },
-    { name: "Account", href: "/account", icon: UserCircle },
-    { name: "Settings", href: "/settings", icon: Settings },
-  ];
-
-  const navigation = role === 'tenant' ? getTenantNavigation() : getLandlordNavigation();
+  const navigation = role === 'tenant' ? getTenantMenuItems() : getLandlordMenuItems();
 
   const handleSignOut = async () => {
     try {
@@ -82,22 +55,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile menu button */}
-      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-white border-b lg:hidden">
-        <Building2 className="h-6 w-6 text-primary" />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="lg:hidden"
-        >
-          {isMobileMenuOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
-        </Button>
-      </div>
+      <MobileHeader
+        isMobileMenuOpen={isMobileMenuOpen}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      />
 
       {/* Mobile sidebar */}
       <div
@@ -106,54 +67,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-full flex-col">
-          <div className="flex h-14 items-center pl-4 pt-16">
-            <Building2 className="h-6 w-6 text-primary" />
-          </div>
-          <nav className="flex-1 overflow-y-auto pl-4 pr-2 py-2">
-            <ul role="list" className="flex flex-1 flex-col gap-y-4">
-              <li>
-                <ul role="list" className="-ml-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        to={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={cn(
-                          "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold hover:bg-gray-50 hover:text-primary",
-                          window.location.pathname === item.href
-                            ? "bg-gray-50 text-primary"
-                            : "text-gray-700"
-                        )}
-                      >
-                        <item.icon
-                          className={cn(
-                            "h-5 w-5 shrink-0",
-                            window.location.pathname === item.href
-                              ? "text-primary"
-                              : "text-gray-400 group-hover:text-primary"
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              <li className="mt-auto">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-x-3"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="h-5 w-5 text-gray-400" />
-                  Sign out
-                </Button>
-              </li>
-            </ul>
-          </nav>
+        <div className="flex h-14 items-center pl-4 pt-16">
+          <Building2 className="h-6 w-6 text-primary" />
         </div>
+        <DashboardSidebarContent
+          navigation={navigation}
+          isMobile={true}
+          onMobileMenuClose={() => setIsMobileMenuOpen(false)}
+          onSignOut={handleSignOut}
+        />
       </div>
 
       {/* Desktop sidebar */}
@@ -162,48 +84,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex h-14 shrink-0 items-center pl-4">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
-          <nav className="flex flex-1 flex-col pl-4 pr-2">
-            <ul role="list" className="flex flex-1 flex-col gap-y-4">
-              <li>
-                <ul role="list" className="-ml-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        to={item.href}
-                        className={cn(
-                          "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold hover:bg-gray-50 hover:text-primary",
-                          window.location.pathname === item.href
-                            ? "bg-gray-50 text-primary"
-                            : "text-gray-700"
-                        )}
-                      >
-                        <item.icon
-                          className={cn(
-                            "h-5 w-5 shrink-0",
-                            window.location.pathname === item.href
-                              ? "text-primary"
-                              : "text-gray-400 group-hover:text-primary"
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              <li className="mt-auto pb-2">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-x-3"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="h-5 w-5 text-gray-400" />
-                  Sign out
-                </Button>
-              </li>
-            </ul>
-          </nav>
+          <DashboardSidebarContent
+            navigation={navigation}
+            onSignOut={handleSignOut}
+          />
         </div>
       </div>
 

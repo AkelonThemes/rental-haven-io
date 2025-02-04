@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CreateMaintenanceRequestDialog } from "@/components/maintenance/CreateMaintenanceRequestDialog";
-import { MaintenanceRequestList } from "@/components/maintenance/MaintenanceRequestList";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
+import { MaintenanceHeader } from "@/components/maintenance/MaintenanceHeader";
+import { MaintenanceRequestList } from "@/components/maintenance/MaintenanceRequestList";
+import { EmptyMaintenanceState } from "@/components/maintenance/EmptyMaintenanceState";
 import { Wrench } from "lucide-react";
 
 export default function TenantMaintenance() {
@@ -91,30 +92,13 @@ export default function TenantMaintenance() {
   return (
     <DashboardLayout>
       <div className="mb-8 space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Maintenance Requests
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Submit and track maintenance requests for your property
-            </p>
-          </div>
-          <CreateMaintenanceRequestDialog
-            tenantId={tenant.id}
-            propertyId={tenant.property_id}
-            onSuccess={refetch}
-          />
-        </div>
-
+        <MaintenanceHeader
+          tenantId={tenant.id}
+          propertyId={tenant.property_id}
+          onSuccess={refetch}
+        />
         {requests.length === 0 ? (
-          <div className="text-center py-8 space-y-4">
-            <Wrench className="w-12 h-12 text-gray-400 mx-auto" />
-            <p className="text-gray-600">
-              No maintenance requests found. Create your first request to get
-              started.
-            </p>
-          </div>
+          <EmptyMaintenanceState />
         ) : (
           <MaintenanceRequestList requests={requests} />
         )}
