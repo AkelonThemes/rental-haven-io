@@ -25,7 +25,19 @@ interface Property {
   zip_code: string;
   status: string;
   rent_amount: number;
-  tenants: any[];
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+  tenants?: Array<{
+    id: string;
+    rent_amount: number;
+    lease_start_date: string;
+    lease_end_date: string;
+    profiles?: {
+      full_name: string | null;
+      email: string | null;
+    } | null;
+  }>;
 }
 
 const Properties = () => {
@@ -35,15 +47,46 @@ const Properties = () => {
   const { data: properties = [], isError, isLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) return [];
+      try {
+        console.log('Fetching properties...');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('No session found');
+          return [];
+        }
 
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*, tenants(*)')
-        .eq('owner_id', session.session.user.id);
+        console.log('User ID:', session.user.id);
+        const { data, error } = await supabase
+          .from('properties')
+          .select(`
+            *,
+            tenants (
+              id,
+              rent_amount,
+              lease_start_date,
+              lease_end_date,
+              profiles (
+                full_name,
+                email
+              )
+            )
+          `)
+          .eq('owner_id', session.user.id);
 
-      if (error) {
+        if (error) {
+          console.error('Error fetching properties:', error);
+          toast({
+            title: "Error fetching properties",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error;
+        }
+
+        console.log('Properties fetched:', data);
+        return data as Property[];
+      } catch (error: any) {
+        console.error('Error in queryFn:', error);
         toast({
           title: "Error fetching properties",
           description: error.message,
@@ -51,11 +94,6 @@ const Properties = () => {
         });
         throw error;
       }
-
-      return data.map(property => ({
-        ...property,
-        status: property.tenants && property.tenants.length > 0 ? 'occupied' : 'vacant'
-      })) || [];
     },
   });
 
@@ -135,7 +173,7 @@ const Properties = () => {
                       </Button>
                       <DeletePropertyDialog
                         propertyId={property.id}
-                        hasTenants={property.tenants?.length > 0}
+                        hasTenants={(property.tenants?.length || 0) > 0}
                       />
                     </div>
                   </TableCell>
