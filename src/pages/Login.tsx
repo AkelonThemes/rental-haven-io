@@ -22,23 +22,24 @@ export default function Login() {
 
     try {
       console.log('Attempting login...');
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
 
-      if (!data.user) {
+      if (!authData.user) {
         throw new Error('No user returned after login');
       }
 
-      console.log('Login successful, fetching profile...', data.user.id);
+      console.log('Login successful, checking profile...', authData.user.id);
       
+      // Check if profile exists
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', data.user.id)
+        .eq('id', authData.user.id)
         .maybeSingle();
 
       if (profileError) {
@@ -51,10 +52,10 @@ export default function Login() {
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
-            id: data.user.id,
+            id: authData.user.id,
             role: 'landlord',
-            full_name: data.user.user_metadata?.full_name || email.split('@')[0],
-            email: data.user.email
+            full_name: authData.user.user_metadata?.full_name || email.split('@')[0],
+            email: authData.user.email
           });
 
         if (insertError) {
