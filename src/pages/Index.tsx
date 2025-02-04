@@ -18,19 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Building2 } from "lucide-react";
+import { Database } from "@/integrations/supabase/types";
 
-interface Property {
-  id: string;
-  address: string;
-  city: string;
-  province: string;
-  zip_code: string;
-  status: "occupied" | "vacant" | "maintenance";
-  rent_amount: number;
-  created_at: string;
-  updated_at: string;
-  owner_id: string;
-}
+type Property = Database['public']['Tables']['properties']['Row'];
 
 const Index = () => {
   const { toast } = useToast();
@@ -64,15 +54,14 @@ const Index = () => {
           options: {
             emailRedirectTo: `${window.location.origin}`,
             data: {
-              full_name: email.split('@')[0], // Default name from email
-              role: 'landlord' // Default role
+              full_name: email.split('@')[0],
+              role: 'landlord'
             }
           }
         });
 
         if (error) throw error;
 
-        // If sign up is successful and we have a session, close the dialog
         if (data.session) {
           setShowAuthDialog(false);
           toast({
