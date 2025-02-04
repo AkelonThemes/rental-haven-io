@@ -15,22 +15,25 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check if user is already logged in
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        if (profile?.role === 'tenant') {
-          navigate('/tenant-dashboard', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
+          if (profile?.role === 'tenant') {
+            navigate('/tenant-dashboard');
+          } else {
+            navigate('/dashboard');
+          }
         }
+      } catch (error) {
+        console.error('Error checking session:', error);
       }
     };
 
@@ -64,7 +67,7 @@ export default function Login() {
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
           console.error('Profile fetch error:', profileError);
@@ -82,9 +85,9 @@ export default function Login() {
         });
 
         if (profile?.role === 'tenant') {
-          navigate('/tenant-dashboard', { replace: true });
+          navigate('/tenant-dashboard');
         } else {
-          navigate('/dashboard', { replace: true });
+          navigate('/dashboard');
         }
       }
     } catch (error: any) {
