@@ -39,7 +39,9 @@ export default function Dashboard() {
               rent_amount,
               lease_start_date,
               lease_end_date,
+              profile_id,
               profiles (
+                id,
                 full_name,
                 email
               )
@@ -49,10 +51,20 @@ export default function Dashboard() {
 
         if (propertiesError) {
           console.error('Error fetching properties:', propertiesError);
+          toast({
+            title: "Error fetching properties",
+            description: propertiesError.message,
+            variant: "destructive",
+          });
           throw propertiesError;
         }
 
-        console.log('Fetched properties:', properties);
+        console.log('Raw properties data:', properties);
+
+        // Log each property's tenants for debugging
+        properties?.forEach((property, index) => {
+          console.log(`Property ${index + 1} tenants:`, property.tenants);
+        });
 
         // Calculate dashboard stats
         const totalRent = properties?.reduce((sum, property) => {
@@ -65,7 +77,7 @@ export default function Dashboard() {
           return count + (property.tenants?.length || 0);
         }, 0) || 0;
 
-        return {
+        const processedData = {
           properties: properties || [],
           stats: {
             propertyCount: properties?.length || 0,
@@ -73,6 +85,9 @@ export default function Dashboard() {
             totalRent
           }
         };
+
+        console.log('Processed dashboard data:', processedData);
+        return processedData;
       } catch (error: any) {
         console.error('Error in landlord dashboard query:', error);
         toast({
