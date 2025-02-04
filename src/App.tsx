@@ -15,6 +15,9 @@ import LandlordMaintenance from "@/pages/LandlordMaintenance";
 import Account from "@/pages/Account";
 import Settings from "@/pages/Settings";
 import PrivateRoute from "@/components/PrivateRoute";
+import TenantDashboard from "@/pages/TenantDashboard";
+import TenantMaintenance from "@/pages/TenantMaintenance";
+import TenantPayments from "@/pages/TenantPayments";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -28,6 +31,8 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            
+            {/* Landlord Routes */}
             <Route
               path="/dashboard"
               element={
@@ -84,6 +89,34 @@ function App() {
                 </PrivateRoute>
               }
             />
+
+            {/* Tenant Routes */}
+            <Route
+              path="/tenant-dashboard"
+              element={
+                <PrivateRoute>
+                  <TenantDashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tenant-maintenance"
+              element={
+                <PrivateRoute>
+                  <TenantMaintenance />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tenant-payments"
+              element={
+                <PrivateRoute>
+                  <TenantPayments />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Shared Routes */}
             <Route
               path="/account"
               element={
