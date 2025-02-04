@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -15,92 +16,58 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const initAuth = async () => {
-      await supabase.auth.signOut();
-      
-      const token = searchParams.get('token');
-      if (token) {
-        setIsSignUp(true);
-        try {
-          const tokenData = JSON.parse(atob(token));
-          if (tokenData.email) {
-            setEmail(tokenData.email);
-          }
-        } catch (error: any) {
-          console.error('Error processing token:', error);
-          toast({
-            title: "Error",
-            description: "Invalid invitation link. Please contact support.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          handleRedirect(session.user.id);
-        }
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        handleRedirect(session.user.id);
       }
     };
-
-    initAuth();
-  }, [navigate, searchParams, toast]);
+    checkSession();
+  }, []);
 
   const handleRedirect = async (userId: string) => {
     try {
-      const { data: profile } = await supabase
+      console.log('Fetching user role for redirect...');
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
         .single();
 
+      if (error) {
+        console.error('Error fetching role:', error);
+        throw error;
+      }
+
+      console.log('User role:', profile?.role);
       if (profile?.role === 'tenant') {
-        navigate("/tenant-dashboard");
+        navigate("/tenant-dashboard", { replace: true });
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     } catch (error) {
-      console.error('Error fetching role:', error);
-      navigate("/dashboard"); // Default to dashboard if role fetch fails
-    }
-  };
-
-  const validateForm = () => {
-    if (!email || !password) {
+      console.error('Error in handleRedirect:', error);
       toast({
-        title: "Validation Error",
-        description: "Please fill in all fields",
+        title: "Error",
+        description: "Failed to determine user role. Please try again.",
         variant: "destructive",
       });
-      return false;
     }
-    if (password.length < 6) {
-      toast({
-        title: "Validation Error",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive",
-      });
-      return false;
-    }
-    return true;
   };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-    
     setLoading(true);
 
     try {
+      console.log('Attempting authentication...');
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth`,
             data: {
               full_name: email.split('@')[0],
               role: 'tenant'
@@ -109,6 +76,7 @@ const Auth = () => {
         });
 
         if (error) {
+          console.error('Signup error:', error);
           if (error.message.includes('User already registered')) {
             toast({
               title: "Account Exists",
@@ -123,6 +91,7 @@ const Auth = () => {
         }
 
         if (data.session) {
+          console.log('Signup successful, redirecting...');
           handleRedirect(data.session.user.id);
         } else {
           toast({
@@ -137,25 +106,12 @@ const Auth = () => {
         });
 
         if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: "Login Failed",
-              description: "Invalid email or password. Please try again.",
-              variant: "destructive",
-            });
-          } else if (error.message.includes('Email not confirmed')) {
-            toast({
-              title: "Email Not Verified",
-              description: "Please check your email and verify your account before signing in.",
-              variant: "destructive",
-            });
-          } else {
-            throw error;
-          }
-          return;
+          console.error('Login error:', error);
+          throw error;
         }
 
         if (data.session) {
+          console.log('Login successful, redirecting...');
           handleRedirect(data.session.user.id);
         }
       }
@@ -163,7 +119,7 @@ const Auth = () => {
       console.error('Authentication error:', error);
       toast({
         title: "Authentication Error",
-        description: error.message || "An unexpected error occurred",
+        description: error.message || "Failed to authenticate. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -174,7 +130,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4">
       <Link 
-        to="/landing" 
+        to="/" 
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -185,8 +141,8 @@ const Auth = () => {
           <CardTitle>{isSignUp ? "Create Account" : "Welcome Back"}</CardTitle>
           <CardDescription>
             {isSignUp
-              ? "Set up your tenant account to get started"
-              : "Sign in to your account to continue"}
+              ? "Create your account to get started"
+              : "Sign in to access your dashboard"}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleAuth}>
@@ -200,7 +156,6 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={searchParams.get('token') !== null}
               />
             </div>
             <div className="space-y-2">
@@ -218,20 +173,18 @@ const Auth = () => {
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
+              {loading ? <Spinner /> : (isSignUp ? "Create Account" : "Sign In")}
             </Button>
-            {!searchParams.get('token') && (
-              <Button
-                type="button"
-                variant="link"
-                className="w-full"
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
-                {isSignUp
-                  ? "Already have an account? Sign In"
-                  : "Don't have an account? Sign Up"}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp
+                ? "Already have an account? Sign In"
+                : "Don't have an account? Sign Up"}
+            </Button>
           </CardFooter>
         </form>
       </Card>
