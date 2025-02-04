@@ -67,11 +67,6 @@ const Properties = () => {
 
         if (error) {
           console.error('Error fetching properties:', error);
-          toast({
-            title: "Error fetching properties",
-            description: error.message,
-            variant: "destructive",
-          });
           throw error;
         }
 
