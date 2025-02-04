@@ -29,7 +29,21 @@ export default function Dashboard() {
 
         console.log('Current user ID:', user.id);
 
-        // First, let's verify we can fetch the properties
+        // First, let's check if we can get the user's profile
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          throw profileError;
+        }
+
+        console.log('User profile:', userProfile);
+
+        // Now let's verify we can fetch the properties
         const { data: properties, error: propertiesError } = await supabase
           .from('properties')
           .select('*')
@@ -52,9 +66,7 @@ export default function Dashboard() {
               rent_amount,
               lease_start_date,
               lease_end_date,
-              profile_id,
               profiles (
-                id,
                 full_name,
                 email
               )
