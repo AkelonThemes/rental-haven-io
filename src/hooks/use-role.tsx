@@ -46,7 +46,8 @@ export function useRole() {
             .insert({
               id: session.user.id,
               role: 'landlord', // Default role
-              full_name: session.user.user_metadata?.full_name || null
+              full_name: session.user.user_metadata?.full_name || null,
+              email: session.user.email
             });
 
           if (insertError) {
