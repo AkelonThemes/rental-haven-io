@@ -133,6 +133,7 @@ const Properties = () => {
                 <TableHead>Zip Code</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Rent Amount</TableHead>
+                <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -153,6 +154,7 @@ const Properties = () => {
                     </span>
                   </TableCell>
                   <TableCell>K{property.rent_amount}/month</TableCell>
+                  <TableCell>{new Date(property.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <PropertySummarySheet propertyId={property.id} address={property.address} />
