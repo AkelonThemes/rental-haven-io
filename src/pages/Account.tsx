@@ -4,6 +4,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { ProfileDetails } from "@/components/account/ProfileDetails";
 import { useRole } from "@/hooks/use-role";
+import { SubscriptionSection } from "@/components/account/SubscriptionSection";
+import { PaymentSection } from "@/components/account/PaymentSection";
 
 const Account = () => {
   const navigate = useNavigate();
@@ -58,6 +60,12 @@ const Account = () => {
 
         <div className="grid gap-6">
           <ProfileDetails profile={profile} role={role} />
+          {role === 'landlord' && (
+            <>
+              <SubscriptionSection profile={profile} />
+              <PaymentSection profile={profile} />
+            </>
+          )}
         </div>
       </div>
     </DashboardLayout>
