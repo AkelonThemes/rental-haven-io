@@ -14,24 +14,30 @@ interface PaymentLinkFormData {
   rent_period_end: string;
 }
 
-export function CreatePaymentLinkDialog({ propertyId, tenantId }: { propertyId: string; tenantId: string }) {
+export function CreatePaymentLinkDialog({ propertyId, tenantId }: { propertyId: string; tenantId?: string }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const form = useForm<PaymentLinkFormData>();
 
   const onSubmit = async (data: PaymentLinkFormData) => {
     try {
+      const paymentData = {
+        amount: Number(data.amount),
+        payment_type: 'rent',
+        status: 'pending',
+        property_id: propertyId,
+        rent_period_start: data.rent_period_start,
+        rent_period_end: data.rent_period_end,
+      } as any;
+
+      // Only add tenant_id if it's provided
+      if (tenantId) {
+        paymentData.tenant_id = tenantId;
+      }
+
       const { error } = await supabase
         .from('payments')
-        .insert([{
-          amount: Number(data.amount),
-          payment_type: 'rent',
-          status: 'pending',
-          property_id: propertyId,
-          tenant_id: tenantId,
-          rent_period_start: data.rent_period_start,
-          rent_period_end: data.rent_period_end,
-        }]);
+        .insert([paymentData]);
 
       if (error) throw error;
 
