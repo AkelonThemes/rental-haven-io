@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -14,12 +15,33 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.role === 'tenant') {
+          navigate('/tenant-dashboard', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      console.log('Attempting login with:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -27,11 +49,17 @@ export default function Login() {
 
       if (error) {
         console.error('Login error:', error);
-        throw error;
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message === "Invalid login credentials" 
+            ? "Invalid email or password. Please try again."
+            : error.message,
+        });
+        return;
       }
 
       if (data.user) {
-        console.log('Login successful, fetching profile...');
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
@@ -40,29 +68,31 @@ export default function Login() {
 
         if (profileError) {
           console.error('Profile fetch error:', profileError);
-          throw profileError;
-        }
-
-        console.log('Profile found:', profile);
-        
-        // Redirect based on user role
-        if (profile?.role === 'tenant') {
-          navigate('/tenant-dashboard', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to fetch user profile",
+          });
+          return;
         }
 
         toast({
           title: "Success",
           description: "Successfully logged in",
         });
+
+        if (profile?.role === 'tenant') {
+          navigate('/tenant-dashboard', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       }
     } catch (error: any) {
       console.error('Error in login flow:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Invalid login credentials",
+        description: error.message || "An unexpected error occurred",
       });
     } finally {
       setLoading(false);
@@ -72,8 +102,12 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="absolute top-4 left-4">
-        <Link to="/" className="text-gray-600 hover:text-gray-900 flex items-center gap-2">
-          <span>←</span> Back to Home
+        <Link 
+          to="/landing" 
+          className="text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
         </Link>
       </div>
       <Card className="w-[350px]">
