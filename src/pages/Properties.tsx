@@ -16,18 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
+import { Tables } from "@/integrations/supabase/types";
 
-interface Property {
-  id: string;
-  address: string;
-  city: string;
-  province: string;
-  zip_code: string;
-  status: string;
-  rent_amount: number;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
+type Property = Tables<"properties"> & {
   tenants?: Array<{
     id: string;
     rent_amount: number;
@@ -38,7 +29,7 @@ interface Property {
       email: string | null;
     } | null;
   }>;
-}
+};
 
 const Properties = () => {
   const { toast } = useToast();
@@ -50,9 +41,10 @@ const Properties = () => {
       try {
         console.log('Fetching properties...');
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (!session) {
           console.log('No session found');
-          return [];
+          throw new Error('No session found');
         }
 
         console.log('User ID:', session.user.id);
