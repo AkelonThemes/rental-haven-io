@@ -19,19 +19,38 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      navigate("/");
-    } catch (error) {
+      if (user) {
+        // Fetch user role from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        // Redirect based on user role
+        if (profile?.role === 'tenant') {
+          navigate('/tenant-dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+
+        toast({
+          title: "Success",
+          description: "Successfully logged in",
+        });
+      }
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Invalid login credentials",
+        description: error.message || "Invalid login credentials",
       });
     } finally {
       setLoading(false);
@@ -41,8 +60,8 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="absolute top-4 left-4">
-        <Link to="/" className="text-gray-600 hover:text-gray-900">
-          ← Back to Home
+        <Link to="/" className="text-gray-600 hover:text-gray-900 flex items-center gap-2">
+          <span>←</span> Back to Home
         </Link>
       </div>
       <Card className="w-[350px]">
