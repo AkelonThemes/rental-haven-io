@@ -18,14 +18,28 @@ export default function Login() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Checking auth status...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          return;
+        }
+
         if (session?.user) {
-          const { data: profile } = await supabase
+          console.log('User found:', session.user.id);
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
             .maybeSingle();
 
+          if (profileError) {
+            console.error('Profile fetch error:', profileError);
+            return;
+          }
+
+          console.log('Profile found:', profile);
           if (profile?.role === 'tenant') {
             navigate('/tenant-dashboard');
           } else {
@@ -33,7 +47,7 @@ export default function Login() {
           }
         }
       } catch (error) {
-        console.error('Error checking session:', error);
+        console.error('Error in auth check:', error);
       }
     };
 
@@ -45,6 +59,7 @@ export default function Login() {
     setLoading(true);
 
     try {
+      console.log('Attempting login...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -63,6 +78,7 @@ export default function Login() {
       }
 
       if (data.user) {
+        console.log('Login successful, fetching profile...');
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
@@ -79,6 +95,7 @@ export default function Login() {
           return;
         }
 
+        console.log('Profile fetched:', profile);
         toast({
           title: "Success",
           description: "Successfully logged in",
@@ -106,7 +123,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="absolute top-4 left-4">
         <Link 
-          to="/landing" 
+          to="/" 
           className="text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
