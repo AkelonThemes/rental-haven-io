@@ -25,7 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { role } = useRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navigation = [
+  const getLandlordNavigation = () => [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Properties", href: "/properties", icon: Building2 },
     { name: "Tenants", href: "/tenants", icon: Users },
@@ -34,6 +34,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Account", href: "/account", icon: UserCircle },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
+
+  const getTenantNavigation = () => [
+    { name: "Dashboard", href: "/tenant-dashboard", icon: LayoutDashboard },
+    { name: "Maintenance", href: "/tenant-maintenance", icon: Wrench },
+    { name: "Account", href: "/account", icon: UserCircle },
+    { name: "Settings", href: "/settings", icon: Settings },
+  ];
+
+  const navigation = role === 'tenant' ? getTenantNavigation() : getLandlordNavigation();
 
   const handleSignOut = async () => {
     try {
