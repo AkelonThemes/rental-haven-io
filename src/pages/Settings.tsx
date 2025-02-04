@@ -15,18 +15,28 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card } from "@/components/ui/card";
+import { useRole } from "@/hooks/use-role";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-type FormData = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-};
+const passwordSchema = z.object({
+  currentPassword: z.string().min(6, "Password must be at least 6 characters"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type FormData = z.infer<typeof passwordSchema>;
 
 const Settings = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { role } = useRole();
 
   const form = useForm<FormData>({
+    resolver: zodResolver(passwordSchema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -39,18 +49,11 @@ const Settings = () => {
       setLoading(true);
       console.log('Starting password update process...');
 
-      if (data.newPassword !== data.confirmPassword) {
-        toast({
-          title: "Error",
-          description: "New passwords do not match",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Get current user's email
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
+      if (!user) {
+        throw new Error("No user found");
+      }
       
       console.log('Updating password for user:', user.email);
 
@@ -106,7 +109,7 @@ const Settings = () => {
           <h1 className="text-2xl font-semibold tracking-tight">Security Settings</h1>
         </div>
         <p className="text-muted-foreground">
-          Change your password to keep your account secure
+          {role === 'tenant' ? 'Manage your tenant account security settings' : 'Change your password to keep your account secure'}
         </p>
 
         <Card className="p-6">
