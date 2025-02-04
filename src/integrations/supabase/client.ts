@@ -14,8 +14,7 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true,
       flowType: 'pkce',
       storage: localStorage,
-      storageKey: 'supabase.auth.token',
-      redirectTo: 'https://rental-haven-io.lovable.app/auth'
+      storageKey: 'supabase.auth.token'
     },
     global: {
       headers: {
