@@ -13,6 +13,7 @@ import EditTenant from "@/pages/EditTenant";
 import Payments from "@/pages/Payments";
 import LandlordMaintenance from "@/pages/LandlordMaintenance";
 import Account from "@/pages/Account";
+import TenantAccount from "@/pages/TenantAccount";
 import Settings from "@/pages/Settings";
 import PrivateRoute from "@/components/PrivateRoute";
 import TenantDashboard from "@/pages/TenantDashboard";
@@ -112,6 +113,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <TenantPayments />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tenant-account"
+              element={
+                <PrivateRoute>
+                  <TenantAccount />
                 </PrivateRoute>
               }
             />
