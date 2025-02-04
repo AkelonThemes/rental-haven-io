@@ -3,9 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { ProfileDetails } from "@/components/account/ProfileDetails";
-import { ConnectAccountSetup } from "@/components/account/ConnectAccountSetup";
-import { SubscriptionSection } from "@/components/account/SubscriptionSection";
-import { PaymentSection } from "@/components/account/PaymentSection";
 import { useRole } from "@/hooks/use-role";
 
 const Account = () => {
@@ -61,13 +58,6 @@ const Account = () => {
 
         <div className="grid gap-6">
           <ProfileDetails profile={profile} role={role} />
-          {role === 'landlord' && (
-            <>
-              <ConnectAccountSetup profile={profile} />
-              <SubscriptionSection profile={profile} />
-              <PaymentSection profile={profile} />
-            </>
-          )}
         </div>
       </div>
     </DashboardLayout>
