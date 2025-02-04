@@ -29,31 +29,34 @@ export function DashboardSidebarContent({
         <ul role="list" className="flex flex-1 flex-col gap-y-4">
           <li>
             <ul role="list" className="-ml-2 space-y-1">
-              {navigation.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    to={item.href}
-                    onClick={handleItemClick}
-                    className={cn(
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold hover:bg-gray-50 hover:text-primary",
-                      window.location.pathname === item.href
-                        ? "bg-gray-50 text-primary"
-                        : "text-gray-700"
-                    )}
-                  >
-                    <item.icon
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.name}>
+                    <Link
+                      to={item.href}
+                      onClick={handleItemClick}
                       className={cn(
-                        "h-5 w-5 shrink-0",
+                        "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold hover:bg-gray-50 hover:text-primary",
                         window.location.pathname === item.href
-                          ? "text-primary"
-                          : "text-gray-400 group-hover:text-primary"
+                          ? "bg-gray-50 text-primary"
+                          : "text-gray-700"
                       )}
-                      aria-hidden="true"
-                    />
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+                    >
+                      <Icon
+                        className={cn(
+                          "h-5 w-5 shrink-0",
+                          window.location.pathname === item.href
+                            ? "text-primary"
+                            : "text-gray-400 group-hover:text-primary"
+                        )}
+                        aria-hidden="true"
+                      />
+                      {item.name}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </li>
           <li className="mt-auto">
