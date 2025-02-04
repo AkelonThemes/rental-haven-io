@@ -21,6 +21,7 @@ export default function Login() {
     setLoading(true);
 
     try {
+      console.log('Attempting login...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -32,23 +33,44 @@ export default function Login() {
         throw new Error('No user returned after login');
       }
 
+      console.log('Login successful, fetching profile...', data.user.id);
+      
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError || !profile) {
-        throw new Error('Failed to fetch user profile');
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
       }
 
-      console.log('Login successful:', { user: data.user, profile });
+      if (!profile) {
+        console.log('No profile found, creating default profile...');
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            role: 'landlord',
+            full_name: data.user.user_metadata?.full_name || email.split('@')[0],
+            email: data.user.email
+          });
 
-      // Navigate immediately based on role
-      if (profile.role === 'tenant') {
-        window.location.href = '/tenant-dashboard';
-      } else {
+        if (insertError) {
+          console.error('Profile creation error:', insertError);
+          throw insertError;
+        }
+
+        console.log('Default profile created, redirecting to dashboard...');
         window.location.href = '/dashboard';
+      } else {
+        console.log('Profile found, role:', profile.role);
+        if (profile.role === 'tenant') {
+          window.location.href = '/tenant-dashboard';
+        } else {
+          window.location.href = '/dashboard';
+        }
       }
 
     } catch (error: any) {
@@ -56,7 +78,7 @@ export default function Login() {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message,
+        description: error.message || "An error occurred during login",
       });
     } finally {
       setLoading(false);
