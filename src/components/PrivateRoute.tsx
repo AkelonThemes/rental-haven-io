@@ -34,15 +34,16 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
   // Redirect tenants to tenant-specific routes
   if (role === 'tenant') {
-    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/tenant-payments', '/account', '/settings'];
+    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/tenant-payments'];
+    const sharedRoutes = ['/account', '/settings'];
     const currentPath = location.pathname;
     
-    // If the current path is /account or /settings, allow access
-    if (currentPath === '/account' || currentPath === '/settings') {
+    // Allow access to shared routes (account and settings)
+    if (sharedRoutes.includes(currentPath)) {
       return <>{children}</>;
     }
     
-    // If the current path starts with any of the tenant routes, allow access
+    // Allow access to tenant-specific routes
     if (tenantRoutes.some(route => currentPath.startsWith(route))) {
       return <>{children}</>;
     }
