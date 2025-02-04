@@ -34,7 +34,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
   // Redirect tenants to tenant-specific routes
   if (role === 'tenant') {
-    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/tenant-payments', '/tenant-account'];
+    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/tenant-payments', '/tenant-account', '/tenant-settings'];
     const currentPath = location.pathname;
     
     // Redirect /account to /tenant-account for tenants
@@ -42,9 +42,9 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
       return <Navigate to="/tenant-account" replace />;
     }
 
-    // Allow access to settings
+    // Redirect /settings to /tenant-settings for tenants
     if (currentPath === '/settings') {
-      return <>{children}</>;
+      return <Navigate to="/tenant-settings" replace />;
     }
     
     // Allow access to tenant-specific routes
