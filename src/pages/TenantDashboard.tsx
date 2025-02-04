@@ -202,7 +202,7 @@ export default function TenantDashboard() {
                 <TableBody>
                   {latestPayments.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell>{payment.property?.address}</TableCell>
+                      <TableCell>{payment.property?.address || 'Unknown Property'}</TableCell>
                       <TableCell>
                         {payment.rent_period_start && payment.rent_period_end ? (
                           `${new Date(payment.rent_period_start).toLocaleDateString()} - ${new Date(payment.rent_period_end).toLocaleDateString()}`
