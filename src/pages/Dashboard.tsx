@@ -45,7 +45,7 @@ export default function Dashboard() {
           throw new Error('User is not a landlord');
         }
 
-        // Fetch properties with their tenants
+        // Fetch properties with their tenants and tenant profiles
         const { data: properties, error: propertiesError } = await supabase
           .from('properties')
           .select(`
@@ -57,6 +57,7 @@ export default function Dashboard() {
               lease_end_date,
               rent_amount,
               profiles (
+                id,
                 full_name,
                 email
               )
@@ -78,7 +79,9 @@ export default function Dashboard() {
 
         // Calculate dashboard stats
         const totalRent = properties?.reduce((sum, property) => {
-          return sum + Number(property.rent_amount || 0);
+          const propertyRent = property.tenants?.reduce((tenantSum, tenant) => 
+            tenantSum + Number(tenant.rent_amount || 0), 0) || 0;
+          return sum + propertyRent;
         }, 0) || 0;
 
         const tenantCount = properties?.reduce((count, property) => {
