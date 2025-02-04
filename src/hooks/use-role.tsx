@@ -11,13 +11,8 @@ export function useRole() {
     async function fetchRole() {
       try {
         console.log('Fetching user role...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          throw sessionError;
-        }
-
         if (!session) {
           console.log('No session found');
           setRole(null);
@@ -27,20 +22,20 @@ export function useRole() {
 
         console.log('Session found, user ID:', session.user.id);
 
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
-          .select('role, email')
+          .select('role')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
+        if (error) {
+          console.error('Error fetching profile:', error);
           toast({
             title: "Error fetching user role",
-            description: profileError.message,
+            description: error.message,
             variant: "destructive",
           });
-          throw profileError;
+          throw error;
         }
 
         if (!profile) {
@@ -51,8 +46,7 @@ export function useRole() {
             .insert({
               id: session.user.id,
               role: 'landlord', // Default role
-              full_name: session.user.user_metadata?.full_name || null,
-              email: session.user.email
+              full_name: session.user.user_metadata?.full_name || null
             });
 
           if (insertError) {
@@ -65,10 +59,9 @@ export function useRole() {
             throw insertError;
           }
 
-          console.log('Created new landlord profile');
           setRole('landlord');
         } else {
-          console.log('Profile found:', profile);
+          console.log('Profile found, role:', profile.role);
           setRole(profile.role as 'landlord' | 'tenant');
         }
       } catch (error: any) {

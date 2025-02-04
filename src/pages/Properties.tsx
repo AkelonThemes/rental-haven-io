@@ -16,20 +16,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-import { Tables } from "@/integrations/supabase/types";
 
-type Property = Tables<"properties"> & {
-  tenants?: Array<{
-    id: string;
-    rent_amount: number;
-    lease_start_date: string;
-    lease_end_date: string;
-    profiles?: {
-      full_name: string | null;
-      email: string | null;
-    } | null;
-  }>;
-};
+interface Property {
+  id: string;
+  address: string;
+  city: string;
+  province: string;
+  zip_code: string;
+  status: string;
+  rent_amount: number;
+  tenants: any[];
+}
 
 const Properties = () => {
   const { toast } = useToast();
@@ -38,42 +35,15 @@ const Properties = () => {
   const { data: properties = [], isError, isLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      try {
-        console.log('Fetching properties...');
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          console.log('No session found');
-          throw new Error('No session found');
-        }
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) return [];
 
-        console.log('User ID:', session.user.id);
-        const { data, error } = await supabase
-          .from('properties')
-          .select(`
-            *,
-            tenants (
-              id,
-              rent_amount,
-              lease_start_date,
-              lease_end_date,
-              profiles (
-                full_name,
-                email
-              )
-            )
-          `)
-          .eq('owner_id', session.user.id);
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*, tenants(*)')
+        .eq('owner_id', session.session.user.id);
 
-        if (error) {
-          console.error('Error fetching properties:', error);
-          throw error;
-        }
-
-        console.log('Properties fetched:', data);
-        return data as Property[];
-      } catch (error: any) {
-        console.error('Error in queryFn:', error);
+      if (error) {
         toast({
           title: "Error fetching properties",
           description: error.message,
@@ -81,6 +51,11 @@ const Properties = () => {
         });
         throw error;
       }
+
+      return data.map(property => ({
+        ...property,
+        status: property.tenants && property.tenants.length > 0 ? 'occupied' : 'vacant'
+      })) || [];
     },
   });
 
@@ -128,12 +103,11 @@ const Properties = () => {
                 <TableHead>Zip Code</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Rent Amount</TableHead>
-                <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {properties.map((property) => (
+              {properties.map((property: Property) => (
                 <TableRow key={property.id}>
                   <TableCell className="font-medium">
                     {property.address}
@@ -149,7 +123,6 @@ const Properties = () => {
                     </span>
                   </TableCell>
                   <TableCell>K{property.rent_amount}/month</TableCell>
-                  <TableCell>{new Date(property.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <PropertySummarySheet propertyId={property.id} address={property.address} />
@@ -162,7 +135,7 @@ const Properties = () => {
                       </Button>
                       <DeletePropertyDialog
                         propertyId={property.id}
-                        hasTenants={(property.tenants?.length || 0) > 0}
+                        hasTenants={property.tenants?.length > 0}
                       />
                     </div>
                   </TableCell>

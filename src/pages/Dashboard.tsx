@@ -1,150 +1,47 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { DashboardCards } from "@/components/dashboard/DashboardCards";
 import { RentTrends } from "@/components/dashboard/RentTrends";
+import { TestEmailButton } from "@/components/TestEmailButton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { useRole } from "@/hooks/use-role";
-import { PropertyCard } from "@/components/PropertyCard";
 
 export default function Dashboard() {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const { role } = useRole();
-
-  // Redirect tenants to their dashboard
-  if (role === 'tenant') {
-    navigate('/tenant-dashboard');
-    return null;
-  }
-
-  // Fetch properties and related data for landlord
-  const { data: landlordData, isLoading: isLoadingData } = useQuery({
-    queryKey: ['landlord-dashboard-data'],
+  // Fetch dashboard data
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('No authenticated user');
-
-        console.log('Fetching data for user ID:', user.id);
-
-        // Fetch properties with tenants in a single query
-        const { data: properties, error: propertiesError } = await supabase
-          .from('properties')
-          .select(`
-            id,
-            address,
-            city,
-            province,
-            zip_code,
-            rent_amount,
-            status,
-            owner_id,
-            created_at,
-            updated_at,
-            tenants (
-              id,
-              rent_amount,
-              lease_start_date,
-              lease_end_date,
-              profiles (
-                full_name,
-                email
-              )
-            )
-          `)
-          .eq('owner_id', user.id);
-
-        if (propertiesError) {
-          console.error('Error fetching properties:', propertiesError);
-          toast({
-            title: "Error fetching properties",
-            description: propertiesError.message,
-            variant: "destructive",
-          });
-          throw propertiesError;
-        }
-
-        console.log('Properties fetched:', properties);
-
-        // Calculate dashboard stats
-        const totalRent = properties?.reduce((sum, property) => {
-          const propertyRent = property.tenants?.reduce((tenantSum, tenant) => 
-            tenantSum + Number(tenant.rent_amount || 0), 0) || 0;
-          return sum + propertyRent;
-        }, 0) || 0;
-
-        const tenantCount = properties?.reduce((count, property) => {
-          return count + (property.tenants?.length || 0);
-        }, 0) || 0;
-
-        const processedData = {
-          properties: properties || [],
-          stats: {
-            propertyCount: properties?.length || 0,
-            tenantCount,
-            totalRent
-          }
-        };
-
-        console.log('Processed dashboard data:', processedData);
-        return processedData;
-      } catch (error: any) {
-        console.error('Error in landlord dashboard query:', error);
-        toast({
-          title: "Error loading dashboard",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-    },
+      const { data: properties } = await supabase.from('properties').select('*');
+      const { data: tenants } = await supabase.from('tenants').select('*');
+      
+      return {
+        propertyCount: properties?.length || 0,
+        tenantCount: tenants?.length || 0,
+        totalRent: tenants?.reduce((sum, tenant) => sum + (tenant.rent_amount || 0), 0) || 0
+      };
+    }
   });
 
-  if (isLoadingData) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Landlord Dashboard</h1>
-        </div>
-        <div className="space-y-8">
-          <DashboardCards isLoading={true} />
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // Fetch rent trends data
+  const { data: rentTrends, isLoading: trendsLoading } = useQuery({
+    queryKey: ['rent-trends'],
+    queryFn: async () => {
+      const { data: tenants } = await supabase
+        .from('tenants')
+        .select('*')
+        .order('lease_start_date', { ascending: true });
+      return tenants;
+    }
+  });
 
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Landlord Dashboard</h1>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <TestEmailButton />
       </div>
       <div className="space-y-8">
-        <DashboardCards 
-          stats={landlordData?.stats} 
-          isLoading={isLoadingData} 
-        />
-        
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Your Properties</h2>
-          {!landlordData?.properties || landlordData.properties.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No properties found. Add your first property to get started.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {landlordData.properties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <RentTrends 
-          data={landlordData?.properties.flatMap(p => p.tenants || [])} 
-          isLoading={isLoadingData} 
-        />
+        <DashboardCards stats={stats} isLoading={statsLoading} />
+        <RentTrends data={rentTrends} isLoading={trendsLoading} />
       </div>
     </DashboardLayout>
   );

@@ -6,7 +6,6 @@ import { ProfileDetails } from "@/components/account/ProfileDetails";
 import { ConnectAccountSetup } from "@/components/account/ConnectAccountSetup";
 import { SubscriptionSection } from "@/components/account/SubscriptionSection";
 import { PaymentSection } from "@/components/account/PaymentSection";
-import { Spinner } from "@/components/ui/spinner";
 
 const Account = () => {
   const navigate = useNavigate();
@@ -43,9 +42,7 @@ const Account = () => {
   if (isLoadingProfile) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <Spinner />
-        </div>
+        <div>Loading...</div>
       </DashboardLayout>
     );
   }
