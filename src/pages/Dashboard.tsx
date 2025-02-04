@@ -27,10 +27,23 @@ export default function Dashboard() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No authenticated user');
 
-        console.log('Fetching data for landlord:', user.id);
+        console.log('Current user ID:', user.id);
 
-        // Fetch properties with their tenants and tenant profiles
+        // First, let's verify we can fetch the properties
         const { data: properties, error: propertiesError } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('owner_id', user.id);
+
+        if (propertiesError) {
+          console.error('Error fetching properties:', propertiesError);
+          throw propertiesError;
+        }
+
+        console.log('Basic properties data:', properties);
+
+        // If we get properties, then let's fetch with the full relation
+        const { data: propertiesWithTenants, error: fullQueryError } = await supabase
           .from('properties')
           .select(`
             *,
@@ -49,44 +62,44 @@ export default function Dashboard() {
           `)
           .eq('owner_id', user.id);
 
-        if (propertiesError) {
-          console.error('Error fetching properties:', propertiesError);
+        if (fullQueryError) {
+          console.error('Error fetching properties with tenants:', fullQueryError);
           toast({
             title: "Error fetching properties",
-            description: propertiesError.message,
+            description: fullQueryError.message,
             variant: "destructive",
           });
-          throw propertiesError;
+          throw fullQueryError;
         }
 
-        console.log('Raw properties data:', properties);
+        console.log('Properties with tenants:', propertiesWithTenants);
 
         // Log each property's tenants for debugging
-        properties?.forEach((property, index) => {
-          console.log(`Property ${index + 1} tenants:`, property.tenants);
+        propertiesWithTenants?.forEach((property, index) => {
+          console.log(`Property ${index + 1} (${property.id}) tenants:`, property.tenants);
         });
 
         // Calculate dashboard stats
-        const totalRent = properties?.reduce((sum, property) => {
+        const totalRent = propertiesWithTenants?.reduce((sum, property) => {
           const propertyRent = property.tenants?.reduce((tenantSum, tenant) => 
             tenantSum + Number(tenant.rent_amount || 0), 0) || 0;
           return sum + propertyRent;
         }, 0) || 0;
 
-        const tenantCount = properties?.reduce((count, property) => {
+        const tenantCount = propertiesWithTenants?.reduce((count, property) => {
           return count + (property.tenants?.length || 0);
         }, 0) || 0;
 
         const processedData = {
-          properties: properties || [],
+          properties: propertiesWithTenants || [],
           stats: {
-            propertyCount: properties?.length || 0,
+            propertyCount: propertiesWithTenants?.length || 0,
             tenantCount,
             totalRent
           }
         };
 
-        console.log('Processed dashboard data:', processedData);
+        console.log('Final processed dashboard data:', processedData);
         return processedData;
       } catch (error: any) {
         console.error('Error in landlord dashboard query:', error);
