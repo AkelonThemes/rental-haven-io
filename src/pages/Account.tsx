@@ -6,11 +6,13 @@ import { ProfileDetails } from "@/components/account/ProfileDetails";
 import { ConnectAccountSetup } from "@/components/account/ConnectAccountSetup";
 import { SubscriptionSection } from "@/components/account/SubscriptionSection";
 import { PaymentSection } from "@/components/account/PaymentSection";
+import { useRole } from "@/hooks/use-role";
 
 const Account = () => {
   const navigate = useNavigate();
+  const { role } = useRole();
 
-  const { data: profile, isLoading: isLoadingProfile, refetch: refetchProfile } = useQuery({
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log('Fetching profile data...');
@@ -58,8 +60,8 @@ const Account = () => {
         </div>
 
         <div className="grid gap-6">
-          <ProfileDetails profile={profile} />
-          {profile?.role === 'landlord' && (
+          <ProfileDetails profile={profile} role={role} />
+          {role === 'landlord' && (
             <>
               <ConnectAccountSetup profile={profile} />
               <SubscriptionSection profile={profile} />

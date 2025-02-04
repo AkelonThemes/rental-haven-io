@@ -3,9 +3,10 @@ import { Tables } from "@/integrations/supabase/types";
 
 interface ProfileDetailsProps {
   profile: Tables<"profiles"> | null;
+  role?: string | null;
 }
 
-export const ProfileDetails = ({ profile }: ProfileDetailsProps) => {
+export const ProfileDetails = ({ profile, role }: ProfileDetailsProps) => {
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
@@ -16,11 +17,19 @@ export const ProfileDetails = ({ profile }: ProfileDetailsProps) => {
           </label>
           <p className="text-base">{profile?.full_name || "Not set"}</p>
         </div>
+        {role === 'landlord' && (
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Company
+            </label>
+            <p className="text-base">{profile?.company_name || "Not set"}</p>
+          </div>
+        )}
         <div>
           <label className="text-sm font-medium text-muted-foreground">
-            Company
+            Email
           </label>
-          <p className="text-base">{profile?.company_name || "Not set"}</p>
+          <p className="text-base">{profile?.email || "Not set"}</p>
         </div>
       </div>
     </Card>

@@ -14,6 +14,9 @@ interface Payment {
   rent_period_start: string | null;
   rent_period_end: string | null;
   created_at: string;
+  property: {
+    address: string;
+  } | null;
 }
 
 export default function TenantPayments() {
@@ -35,7 +38,10 @@ export default function TenantPayments() {
             payment_date,
             rent_period_start,
             rent_period_end,
-            created_at
+            created_at,
+            property:properties (
+              address
+            )
           `)
           .eq('payment_type', 'rent')
           .eq('tenant_id', session.user.id)
@@ -79,7 +85,7 @@ export default function TenantPayments() {
                 <div key={payment.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                   <div>
                     <p className="font-medium">
-                      Rent Payment
+                      {payment.property?.address || 'Unknown Property'}
                       {payment.rent_period_start && payment.rent_period_end && (
                         <span className="text-sm text-gray-500 ml-2">
                           ({new Date(payment.rent_period_start).toLocaleDateString()} - {new Date(payment.rent_period_end).toLocaleDateString()})

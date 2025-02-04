@@ -14,7 +14,6 @@ export const getLandlordMenuItems = (): NavigationItem[] => [
 export const getTenantMenuItems = (): NavigationItem[] => [
   { name: "Dashboard", href: "/tenant-dashboard", icon: LayoutDashboard },
   { name: "Maintenance", href: "/tenant-maintenance", icon: Wrench },
-  { name: "Payments", href: "/tenant-payments", icon: Receipt },
   { name: "Account", href: "/account", icon: UserCircle },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
