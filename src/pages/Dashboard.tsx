@@ -40,6 +40,9 @@ export default function Dashboard() {
             zip_code,
             rent_amount,
             status,
+            owner_id,
+            created_at,
+            updated_at,
             tenants (
               id,
               rent_amount,
