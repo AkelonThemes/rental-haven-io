@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function useRole() {
   const [role, setRole] = useState<'landlord' | 'tenant' | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchRole() {
@@ -17,6 +19,7 @@ export function useRole() {
           console.log('No session found');
           setRole(null);
           setLoading(false);
+          navigate('/login');
           return;
         }
 
@@ -26,27 +29,21 @@ export function useRole() {
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
-          .maybeSingle();
+          .single();
 
         if (error) {
           console.error('Error fetching profile:', error);
-          toast({
-            title: "Error fetching user role",
-            description: error.message,
-            variant: "destructive",
-          });
-          throw error;
-        }
-
-        if (!profile) {
-          console.log('No profile found, creating default profile...');
-          // Create a default profile if none exists
+          // If there's an error fetching the profile, set a default role
+          setRole('landlord');
+          
+          // Create a default profile
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: session.user.id,
-              role: 'landlord', // Default role
-              full_name: session.user.user_metadata?.full_name || null
+              role: 'landlord',
+              full_name: session.user.user_metadata?.full_name || null,
+              email: session.user.email
             });
 
           if (insertError) {
@@ -56,19 +53,18 @@ export function useRole() {
               description: insertError.message,
               variant: "destructive",
             });
-            throw insertError;
           }
-
-          setRole('landlord');
         } else {
-          console.log('Profile found, role:', profile.role);
-          setRole(profile.role as 'landlord' | 'tenant');
+          console.log('Profile found, role:', profile?.role);
+          setRole(profile?.role as 'landlord' | 'tenant');
         }
       } catch (error: any) {
         console.error('Error in fetchRole:', error);
+        // Set a default role in case of error
+        setRole('landlord');
         toast({
           title: "Error",
-          description: "Failed to fetch user role. Please try again.",
+          description: "Failed to fetch user role. Using default role.",
           variant: "destructive",
         });
       } finally {
@@ -85,7 +81,7 @@ export function useRole() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, navigate]);
 
   return { role, loading };
 }

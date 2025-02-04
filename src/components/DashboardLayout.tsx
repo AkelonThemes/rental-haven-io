@@ -8,11 +8,12 @@ import { Building2 } from "lucide-react";
 import { DashboardSidebarContent } from "./dashboard/DashboardSidebarContent";
 import { MobileHeader } from "./dashboard/MobileHeader";
 import { getLandlordMenuItems, getTenantMenuItems } from "./dashboard/DashboardMenuItems";
+import { Skeleton } from "./ui/skeleton";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { role } = useRole();
+  const { role, loading } = useRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = role === 'tenant' ? getTenantMenuItems() : getLandlordMenuItems();
@@ -49,8 +50,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-full max-w-md space-y-4 p-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    );
+  }
+
   if (!role) {
-    return <div>Loading...</div>;
+    navigate('/login');
+    return null;
   }
 
   return (
