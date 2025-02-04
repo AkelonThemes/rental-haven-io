@@ -27,13 +27,19 @@ export default function Dashboard() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No authenticated user');
 
-        console.log('Current user ID:', user.id);
+        console.log('Fetching data for user ID:', user.id);
 
         // Fetch properties with tenants in a single query
-        const { data: propertiesWithTenants, error: queryError } = await supabase
+        const { data: properties, error: propertiesError } = await supabase
           .from('properties')
           .select(`
-            *,
+            id,
+            address,
+            city,
+            province,
+            zip_code,
+            rent_amount,
+            status,
             tenants (
               id,
               rent_amount,
@@ -47,33 +53,33 @@ export default function Dashboard() {
           `)
           .eq('owner_id', user.id);
 
-        if (queryError) {
-          console.error('Error fetching properties with tenants:', queryError);
+        if (propertiesError) {
+          console.error('Error fetching properties:', propertiesError);
           toast({
             title: "Error fetching properties",
-            description: queryError.message,
+            description: propertiesError.message,
             variant: "destructive",
           });
-          throw queryError;
+          throw propertiesError;
         }
 
-        console.log('Raw properties with tenants data:', propertiesWithTenants);
+        console.log('Properties fetched:', properties);
 
         // Calculate dashboard stats
-        const totalRent = propertiesWithTenants?.reduce((sum, property) => {
+        const totalRent = properties?.reduce((sum, property) => {
           const propertyRent = property.tenants?.reduce((tenantSum, tenant) => 
             tenantSum + Number(tenant.rent_amount || 0), 0) || 0;
           return sum + propertyRent;
         }, 0) || 0;
 
-        const tenantCount = propertiesWithTenants?.reduce((count, property) => {
+        const tenantCount = properties?.reduce((count, property) => {
           return count + (property.tenants?.length || 0);
         }, 0) || 0;
 
         const processedData = {
-          properties: propertiesWithTenants || [],
+          properties: properties || [],
           stats: {
-            propertyCount: propertiesWithTenants?.length || 0,
+            propertyCount: properties?.length || 0,
             tenantCount,
             totalRent
           }
