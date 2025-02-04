@@ -1,28 +1,34 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useRole } from "@/hooks/use-role";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState(null);
   const { role } = useRole();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-      } catch (error) {
-        console.error("Error checking auth status:", error);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        navigate('/login', { replace: true });
       }
     };
 
-    checkUser();
-  }, []);
+    checkAuth();
+  }, [navigate]);
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
   }
 
   // Redirect tenants to tenant-specific routes

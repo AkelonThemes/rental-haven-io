@@ -1,12 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://hlljirnsimcmmuuhaurs.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsbGppcm5zaW1jbW11dWhhdXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5MDM1NzEsImV4cCI6MjA1MzQ3OTU3MX0.1Kl1-kaOsjVmjjYpUSaPEVmHLigSieurs2edfwYjuLk";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 export const supabase = createClient<Database>(
-  SUPABASE_URL, 
-  SUPABASE_PUBLISHABLE_KEY,
+  supabaseUrl, 
+  supabaseAnonKey,
   {
     auth: {
       autoRefreshToken: true,
@@ -14,8 +18,7 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true,
       flowType: 'pkce',
       storage: localStorage,
-      storageKey: 'supabase.auth.token',
-      redirectTo: 'https://rental-haven-io.lovable.app/auth'
+      storageKey: 'supabase.auth.token'
     },
     global: {
       headers: {

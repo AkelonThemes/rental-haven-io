@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -15,104 +16,47 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log('Checking auth status...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          return;
-        }
-
-        if (session?.user) {
-          console.log('User found:', session.user.id);
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('Profile fetch error:', profileError);
-            return;
-          }
-
-          console.log('Profile found:', profile);
-          if (profile?.role === 'tenant') {
-            navigate('/tenant-dashboard');
-          } else {
-            navigate('/dashboard');
-          }
-        }
-      } catch (error) {
-        console.error('Error in auth check:', error);
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      console.log('Attempting login...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
-        console.error('Login error:', error);
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: error.message === "Invalid login credentials" 
-            ? "Invalid email or password. Please try again."
-            : error.message,
-        });
-        return;
+      if (error) throw error;
+
+      if (!data.user) {
+        throw new Error('No user returned after login');
       }
 
-      if (data.user) {
-        console.log('Login successful, fetching profile...');
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .maybeSingle();
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
 
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to fetch user profile",
-          });
-          return;
-        }
-
-        console.log('Profile fetched:', profile);
-        toast({
-          title: "Success",
-          description: "Successfully logged in",
-        });
-
-        if (profile?.role === 'tenant') {
-          navigate('/tenant-dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+      if (profileError || !profile) {
+        throw new Error('Failed to fetch user profile');
       }
+
+      console.log('Login successful:', { user: data.user, profile });
+
+      // Navigate immediately based on role
+      if (profile.role === 'tenant') {
+        window.location.href = '/tenant-dashboard';
+      } else {
+        window.location.href = '/dashboard';
+      }
+
     } catch (error: any) {
-      console.error('Error in login flow:', error);
+      console.error('Login error:', error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "An unexpected error occurred",
+        title: "Login Failed",
+        description: error.message,
       });
     } finally {
       setLoading(false);
@@ -160,7 +104,7 @@ export default function Login() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : "Login"}
+              {loading ? <Spinner /> : "Login"}
             </Button>
             <div className="text-center text-sm text-gray-600 mt-4">
               Don't have an account?{" "}
