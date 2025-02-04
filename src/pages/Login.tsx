@@ -27,51 +27,20 @@ export default function Login() {
         password,
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
+      }
 
       if (!authData.user) {
         throw new Error('No user returned after login');
       }
 
-      console.log('Login successful, checking profile...', authData.user.id);
+      console.log('Login successful, user:', authData.user.id);
       
-      // Check if profile exists
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        throw profileError;
-      }
-
-      if (!profile) {
-        console.log('No profile found, creating default profile...');
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            role: 'landlord',
-            full_name: authData.user.user_metadata?.full_name || email.split('@')[0],
-            email: authData.user.email
-          });
-
-        if (insertError) {
-          console.error('Profile creation error:', insertError);
-          throw insertError;
-        }
-
-        console.log('Default profile created, redirecting to dashboard...');
+      // After successful login, redirect to dashboard
+      if (authData.user) {
         window.location.href = '/dashboard';
-      } else {
-        console.log('Profile found, role:', profile.role);
-        if (profile.role === 'tenant') {
-          window.location.href = '/tenant-dashboard';
-        } else {
-          window.location.href = '/dashboard';
-        }
       }
 
     } catch (error: any) {
