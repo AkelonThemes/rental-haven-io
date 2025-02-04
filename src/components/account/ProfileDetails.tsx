@@ -14,16 +14,25 @@ export const ProfileDetails = ({ profile, role }: ProfileDetailsProps) => {
     queryFn: async () => {
       if (role !== 'tenant' || !profile?.id) return null;
 
-      const { data: tenant } = await supabase
+      console.log('Fetching property for tenant profile:', profile.id);
+
+      const { data: tenant, error } = await supabase
         .from('tenants')
         .select(`
           property:properties (
+            id,
             address
           )
         `)
         .eq('profile_id', profile.id)
         .single();
 
+      if (error) {
+        console.error('Error fetching tenant property:', error);
+        return null;
+      }
+
+      console.log('Tenant property data:', tenant);
       return tenant?.property;
     },
     enabled: role === 'tenant' && !!profile?.id,
