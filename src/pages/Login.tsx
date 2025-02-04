@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -19,26 +19,37 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { data: { user }, error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login with:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
 
-      if (user) {
-        // Fetch user role from profiles table
-        const { data: profile } = await supabase
+      if (data.user) {
+        console.log('Login successful, fetching profile...');
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', data.user.id)
           .single();
 
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          throw profileError;
+        }
+
+        console.log('Profile found:', profile);
+        
         // Redirect based on user role
         if (profile?.role === 'tenant') {
-          navigate('/tenant-dashboard');
+          navigate('/tenant-dashboard', { replace: true });
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
 
         toast({
@@ -47,6 +58,7 @@ export default function Login() {
         });
       }
     } catch (error: any) {
+      console.error('Error in login flow:', error);
       toast({
         variant: "destructive",
         title: "Error",
