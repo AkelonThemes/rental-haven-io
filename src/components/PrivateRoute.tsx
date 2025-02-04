@@ -34,7 +34,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
   // Redirect tenants to tenant-specific routes
   if (role === 'tenant') {
-    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/notifications', '/account', '/settings'];
+    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/tenant-payments', '/account', '/settings'];
     const isAccessingLandlordRoute = !tenantRoutes.some(route => location.pathname.startsWith(route));
     
     if (isAccessingLandlordRoute && location.pathname !== '/') {
@@ -44,7 +44,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
   // Redirect landlords to landlord-specific routes
   if (role === 'landlord') {
-    const landlordRoutes = ['/dashboard', '/properties', '/tenants', '/maintenance', '/notifications', '/account', '/settings'];
+    const landlordRoutes = ['/dashboard', '/properties', '/tenants', '/maintenance', '/payments', '/account', '/settings'];
     const isAccessingTenantRoute = location.pathname.includes('tenant-');
     
     if (isAccessingTenantRoute) {

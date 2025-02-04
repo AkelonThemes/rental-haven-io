@@ -33,38 +33,33 @@ export function useRole() {
 
         if (error) {
           console.error('Error fetching profile:', error);
-          // If there's an error fetching the profile, set a default role
-          setRole('landlord');
-          
-          // Create a default profile
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: session.user.id,
-              role: 'landlord',
-              full_name: session.user.user_metadata?.full_name || null,
-              email: session.user.email
-            });
-
-          if (insertError) {
-            console.error('Error creating profile:', insertError);
-            toast({
-              title: "Error creating user profile",
-              description: insertError.message,
-              variant: "destructive",
-            });
-          }
+          toast({
+            title: "Error fetching user role",
+            description: error.message,
+            variant: "destructive",
+          });
+          setRole(null);
         } else {
           console.log('Profile found, role:', profile?.role);
           setRole(profile?.role as 'landlord' | 'tenant');
+          
+          // Redirect based on role
+          if (profile?.role === 'tenant') {
+            if (!window.location.pathname.startsWith('/tenant-')) {
+              navigate('/tenant-dashboard');
+            }
+          } else if (profile?.role === 'landlord') {
+            if (window.location.pathname.startsWith('/tenant-')) {
+              navigate('/dashboard');
+            }
+          }
         }
       } catch (error: any) {
         console.error('Error in fetchRole:', error);
-        // Set a default role in case of error
-        setRole('landlord');
+        setRole(null);
         toast({
           title: "Error",
-          description: "Failed to fetch user role. Using default role.",
+          description: "Failed to fetch user role",
           variant: "destructive",
         });
       } finally {
