@@ -23,59 +23,85 @@ export default function Dashboard() {
   const { data: landlordData, isLoading: isLoadingData } = useQuery({
     queryKey: ['landlord-dashboard-data'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No authenticated user');
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('No authenticated user');
 
-      console.log('Fetching data for landlord:', user.id);
+        console.log('Fetching data for landlord:', user.id);
 
-      // Fetch properties with their tenants
-      const { data: properties, error: propertiesError } = await supabase
-        .from('properties')
-        .select(`
-          *,
-          tenants (
-            id,
-            profile_id,
-            lease_start_date,
-            lease_end_date,
-            rent_amount,
-            profiles (
-              full_name,
-              email
+        // First, verify the user's role
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          throw profileError;
+        }
+
+        if (profile.role !== 'landlord') {
+          throw new Error('User is not a landlord');
+        }
+
+        // Fetch properties with their tenants
+        const { data: properties, error: propertiesError } = await supabase
+          .from('properties')
+          .select(`
+            *,
+            tenants (
+              id,
+              profile_id,
+              lease_start_date,
+              lease_end_date,
+              rent_amount,
+              profiles (
+                full_name,
+                email
+              )
             )
-          )
-        `)
-        .eq('owner_id', user.id);
+          `)
+          .eq('owner_id', user.id);
 
-      if (propertiesError) {
-        console.error('Error fetching properties:', propertiesError);
+        if (propertiesError) {
+          console.error('Error fetching properties:', propertiesError);
+          toast({
+            title: "Error fetching properties",
+            description: propertiesError.message,
+            variant: "destructive",
+          });
+          throw propertiesError;
+        }
+
+        console.log('Fetched properties:', properties);
+
+        // Calculate dashboard stats
+        const totalRent = properties?.reduce((sum, property) => {
+          return sum + Number(property.rent_amount || 0);
+        }, 0) || 0;
+
+        const tenantCount = properties?.reduce((count, property) => {
+          return count + (property.tenants?.length || 0);
+        }, 0) || 0;
+
+        return {
+          properties: properties || [],
+          stats: {
+            propertyCount: properties?.length || 0,
+            tenantCount,
+            totalRent
+          }
+        };
+      } catch (error: any) {
+        console.error('Error in landlord dashboard query:', error);
         toast({
-          title: "Error fetching properties",
-          description: propertiesError.message,
+          title: "Error loading dashboard",
+          description: error.message,
           variant: "destructive",
         });
-        throw propertiesError;
+        throw error;
       }
-
-      console.log('Fetched properties:', properties);
-
-      // Calculate dashboard stats
-      const totalRent = properties?.reduce((sum, property) => {
-        return sum + Number(property.rent_amount || 0);
-      }, 0) || 0;
-
-      const tenantCount = properties?.reduce((count, property) => {
-        return count + (property.tenants?.length || 0);
-      }, 0) || 0;
-
-      return {
-        properties: properties || [],
-        stats: {
-          propertyCount: properties?.length || 0,
-          tenantCount,
-          totalRent
-        }
-      };
     },
   });
 
@@ -105,13 +131,13 @@ export default function Dashboard() {
         
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold">Your Properties</h2>
-          {landlordData?.properties.length === 0 ? (
+          {!landlordData?.properties || landlordData.properties.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
               <p className="text-gray-500">No properties found. Add your first property to get started.</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {landlordData?.properties.map((property) => (
+              {landlordData.properties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))}
             </div>
