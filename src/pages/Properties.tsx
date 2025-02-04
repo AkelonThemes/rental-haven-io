@@ -145,7 +145,7 @@ const Properties = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {properties.map((property: Property) => (
+              {properties.map((property) => (
                 <TableRow key={property.id}>
                   <TableCell className="font-medium">
                     {property.address}
