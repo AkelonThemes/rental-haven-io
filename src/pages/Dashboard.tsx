@@ -29,22 +29,6 @@ export default function Dashboard() {
 
         console.log('Fetching data for landlord:', user.id);
 
-        // First, verify the user's role
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          throw profileError;
-        }
-
-        if (profile.role !== 'landlord') {
-          throw new Error('User is not a landlord');
-        }
-
         // Fetch properties with their tenants and tenant profiles
         const { data: properties, error: propertiesError } = await supabase
           .from('properties')
