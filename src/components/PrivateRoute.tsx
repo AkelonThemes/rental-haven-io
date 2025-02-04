@@ -34,11 +34,11 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
   // Redirect tenants to tenant-specific routes
   if (role === 'tenant') {
-    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/account', '/settings', '/tenant-payments'];
+    const tenantRoutes = ['/tenant-dashboard', '/tenant-maintenance', '/tenant-payments', '/account', '/settings'];
     const currentPath = location.pathname;
     
-    // If the current path is /settings or /account, allow access
-    if (currentPath === '/settings' || currentPath === '/account') {
+    // If the current path is /account or /settings, allow access
+    if (currentPath === '/account' || currentPath === '/settings') {
       return <>{children}</>;
     }
     
