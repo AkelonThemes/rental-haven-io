@@ -1,34 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Receipt, ExternalLink } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-interface Payment {
-  id: string;
-  amount: number;
-  status: string;
-  payment_date: string | null;
-  rent_period_start: string | null;
-  rent_period_end: string | null;
-  created_at: string;
-  stripe_payment_id: string | null;
-  property: {
-    address: string;
-  } | null;
-}
+import { PaymentSection } from "@/components/tenant-dashboard/PaymentSection";
 
 export default function TenantDashboard() {
   const { toast } = useToast();
@@ -92,7 +68,7 @@ export default function TenantDashboard() {
         variant: "default",
       });
       // Clear the success parameter from URL
-      navigate('/dashboard', { replace: true });
+      navigate('/tenant-dashboard', { replace: true });
     }
   }, [success, toast, navigate]);
 
@@ -122,7 +98,7 @@ export default function TenantDashboard() {
     };
   }, [latestPayments, refetch]);
 
-  const handlePaymentClick = async (payment: Payment) => {
+  const handlePaymentClick = async (payment: any) => {
     if (!payment.id) {
       toast({
         title: "Payment Error",
@@ -178,87 +154,10 @@ export default function TenantDashboard() {
           <p className="text-gray-600">Welcome to your tenant portal</p>
         </div>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Rental Payments</h2>
-            </div>
-          </div>
-
-          {latestPayments && latestPayments.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Property</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {latestPayments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>{payment.property?.address || 'Unknown Property'}</TableCell>
-                      <TableCell>
-                        {payment.rent_period_start && payment.rent_period_end ? (
-                          `${new Date(payment.rent_period_start).toLocaleDateString()} - ${new Date(payment.rent_period_end).toLocaleDateString()}`
-                        ) : (
-                          'N/A'
-                        )}
-                      </TableCell>
-                      <TableCell className="font-semibold">K{payment.amount}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 text-sm rounded-full ${
-                          payment.status === 'completed' 
-                            ? 'bg-green-100 text-green-700'
-                            : payment.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : payment.status === 'failed'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {payment.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {payment.status === 'pending' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePaymentClick(payment)}
-                          >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            Pay Now
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Receipt className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-semibold">No payments found</h3>
-              <p className="mt-2 text-gray-500">
-                You don't have any rental payments at the moment.
-              </p>
-            </div>
-          )}
-          
-          <button
-            onClick={() => navigate('/payments')}
-            className="mt-4 text-primary hover:underline text-sm w-full text-center"
-          >
-            View All Payments
-          </button>
-        </Card>
+        <PaymentSection 
+          payments={latestPayments} 
+          onPaymentClick={handlePaymentClick}
+        />
       </div>
     </DashboardLayout>
   );
