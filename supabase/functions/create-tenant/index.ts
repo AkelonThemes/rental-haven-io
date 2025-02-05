@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { tenantData } = await req.json() as { tenantData: TenantData }
     
-    console.log('Processing tenant creation for:', tenantData.email)
+    console.log('Starting tenant creation process for:', tenantData.email)
     
     // First check if user already exists
     const { data: existingUsers, error: searchError } = await supabase.auth.admin.listUsers({
@@ -52,8 +52,8 @@ Deno.serve(async (req) => {
 
     // If user exists, check their role
     if (existingUsers.users.length > 0) {
+      console.log('Found existing user')
       userId = existingUsers.users[0].id
-      console.log('Existing user found with ID:', userId)
       
       // Check user's role in profiles table
       const { data: profileData, error: profileError } = await supabase
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Update existing profile to ensure tenant role and name
+      // Update existing profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
@@ -125,19 +125,21 @@ Deno.serve(async (req) => {
       // Wait for the trigger to complete profile creation
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Ensure profile is updated with tenant role
-      const { error: updateError } = await supabase
+      // Ensure profile is created with tenant role
+      const { error: insertProfileError } = await supabase
         .from('profiles')
-        .update({ 
+        .insert({
+          id: userId,
           role: 'tenant',
           full_name: tenantData.full_name,
           email: tenantData.email
         })
-        .eq('id', userId)
+        .select()
+        .single()
 
-      if (updateError) {
-        console.error('Error updating profile:', updateError)
-        throw updateError
+      if (insertProfileError) {
+        console.error('Error creating profile:', insertProfileError)
+        throw insertProfileError
       }
     }
 

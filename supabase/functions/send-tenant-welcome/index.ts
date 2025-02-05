@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
           <li><strong>Password:</strong> ${password}</li>
         </ul>
         <p>Please use these credentials to log in at:</p>
-        <p><a href="https://rental-haven-io.lovable.app/auth">Sign In to Your Account</a></p>
+        <p><a href="https://rental-haven-io.lovable.app/login">Sign In to Your Account</a></p>
         <p><strong>Important Security Notice:</strong> For your account's security, please change your password immediately after logging in.</p>
         <p>Best regards,<br>The Rental Haven Team</p>
       `
