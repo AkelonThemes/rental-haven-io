@@ -11,6 +11,8 @@ export function useRole() {
 
   useEffect(() => {
     let isSubscribed = true;
+    let retryCount = 0;
+    const maxRetries = 3;
 
     async function fetchRole() {
       try {
@@ -29,49 +31,45 @@ export function useRole() {
 
         console.log('Session found, user ID:', session.user.id);
 
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .maybeSingle();
+        // Add retry logic for profile fetch
+        const fetchProfileWithRetry = async () => {
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
-          if (isSubscribed) {
-            toast({
-              title: "Error fetching user role",
-              description: "Please try refreshing the page",
-              variant: "destructive",
-            });
-            setRole(null);
-            setLoading(false);
-          }
-        } else {
-          console.log('Profile found, role:', profile?.role);
-          if (isSubscribed) {
-            setRole(profile?.role as 'landlord' | 'tenant');
+            if (error) throw error;
             
-            // Redirect based on role only if we're not already on the correct path
-            if (profile?.role === 'tenant' && !window.location.pathname.startsWith('/tenant-')) {
-              navigate('/tenant-dashboard');
-            } else if (profile?.role === 'landlord' && window.location.pathname.startsWith('/tenant-')) {
-              navigate('/dashboard');
+            console.log('Profile found, role:', profile?.role);
+            if (isSubscribed) {
+              setRole(profile?.role as 'landlord' | 'tenant');
+              setLoading(false);
             }
+          } catch (error) {
+            console.error('Error fetching profile:', error);
+            if (retryCount < maxRetries) {
+              retryCount++;
+              console.log(`Retrying profile fetch (${retryCount}/${maxRetries})...`);
+              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+              return fetchProfileWithRetry();
+            }
+            throw error;
           }
-        }
+        };
+
+        await fetchProfileWithRetry();
       } catch (error: any) {
         console.error('Error in fetchRole:', error);
         if (isSubscribed) {
           setRole(null);
+          setLoading(false);
           toast({
             title: "Error",
-            description: "Failed to fetch user role",
+            description: "Failed to fetch user role. Please try refreshing the page.",
             variant: "destructive",
           });
-        }
-      } finally {
-        if (isSubscribed) {
-          setLoading(false);
         }
       }
     }
