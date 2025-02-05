@@ -25,11 +25,32 @@ export default function Dashboard() {
           property:properties(owner_id)
         `)
         .eq('property.owner_id', session.user.id);
+
+      // Fetch completed rent payments for the current month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const endOfMonth = new Date();
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      endOfMonth.setDate(0);
+      endOfMonth.setHours(23, 59, 59, 999);
+
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('payment_type', 'rent')
+        .eq('status', 'completed')
+        .gte('payment_date', startOfMonth.toISOString())
+        .lte('payment_date', endOfMonth.toISOString())
+        .in('property_id', properties?.map(p => p.id) || []);
+      
+      const totalRent = payments?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
       
       return {
         propertyCount: properties?.length || 0,
         tenantCount: tenants?.length || 0,
-        totalRent: tenants?.reduce((sum, tenant) => sum + (tenant.rent_amount || 0), 0) || 0
+        totalRent
       };
     }
   });
