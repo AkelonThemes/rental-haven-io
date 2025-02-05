@@ -14,7 +14,7 @@ interface TenantData {
 function generatePassword() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
   let password = ''
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 12; i++) {
     password += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return password
@@ -33,10 +33,10 @@ Deno.serve(async (req) => {
 
     const { tenantData } = await req.json() as { tenantData: TenantData }
     
-    console.log('Creating or fetching auth user for:', tenantData.email)
+    console.log('Processing tenant creation for:', tenantData.email)
     
     // First check if user already exists
-    const { data: existingUser, error: searchError } = await supabase.auth.admin.listUsers({
+    const { data: existingUsers, error: searchError } = await supabase.auth.admin.listUsers({
       filter: {
         email: tenantData.email
       }
@@ -51,8 +51,9 @@ Deno.serve(async (req) => {
     let password: string | undefined
 
     // If user exists, check their role
-    if (existingUser.users.length > 0) {
-      userId = existingUser.users[0].id
+    if (existingUsers.users.length > 0) {
+      userId = existingUsers.users[0].id
+      console.log('Existing user found with ID:', userId)
       
       // Check user's role in profiles table
       const { data: profileData, error: profileError } = await supabase
@@ -78,12 +79,13 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Update existing user's profile to ensure tenant role
+      // Update existing profile to ensure tenant role and name
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
           role: 'tenant',
-          full_name: tenantData.full_name
+          full_name: tenantData.full_name,
+          email: tenantData.email
         })
         .eq('id', userId)
 
@@ -94,9 +96,10 @@ Deno.serve(async (req) => {
 
       console.log('Updated existing user profile')
     } else {
-      // Create new user as tenant
+      // Create new user
       console.log('Creating new tenant user')
       password = generatePassword()
+      
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: tenantData.email,
         password: password,
@@ -117,6 +120,7 @@ Deno.serve(async (req) => {
       }
 
       userId = newUser.user.id
+      console.log('Created new user with ID:', userId)
 
       // Wait for the trigger to complete profile creation
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -126,7 +130,8 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({ 
           role: 'tenant',
-          full_name: tenantData.full_name
+          full_name: tenantData.full_name,
+          email: tenantData.email
         })
         .eq('id', userId)
 
@@ -138,7 +143,7 @@ Deno.serve(async (req) => {
 
     console.log('Creating tenant record')
 
-    // Create tenant record with the profile ID
+    // Create tenant record
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
@@ -155,10 +160,12 @@ Deno.serve(async (req) => {
       throw tenantError
     }
 
+    console.log('Tenant creation successful')
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        userId: userId,
+        userId,
         password // Only included if a new user was created
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
