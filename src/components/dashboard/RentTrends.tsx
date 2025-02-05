@@ -13,7 +13,7 @@ interface RentTrendsProps {
 export function RentTrends({ isLoading }: RentTrendsProps) {
   const isMobile = useIsMobile();
   
-  // Fetch rental payments data for the current financial year
+  // Fetch all rental payments data for the current year
   const { data: paymentsData, isLoading: isPaymentsLoading } = useQuery({
     queryKey: ['rental-performance'],
     queryFn: async () => {
@@ -23,9 +23,8 @@ export function RentTrends({ isLoading }: RentTrendsProps) {
 
       const { data, error } = await supabase
         .from('payments')
-        .select('amount, payment_date')
+        .select('amount, payment_date, status')
         .eq('payment_type', 'rent')
-        .eq('status', 'completed')
         .gte('payment_date', yearStart.toISOString())
         .lte('payment_date', yearEnd.toISOString())
         .order('payment_date');
@@ -39,9 +38,22 @@ export function RentTrends({ isLoading }: RentTrendsProps) {
       const monthlyData = data.reduce((acc: any, payment) => {
         const month = format(new Date(payment.payment_date), 'MMM');
         if (!acc[month]) {
-          acc[month] = { month, total: 0 };
+          acc[month] = { 
+            month, 
+            total: 0,
+            paid: 0,
+            unpaid: 0 
+          };
         }
-        acc[month].total += Number(payment.amount);
+        const amount = Number(payment.amount);
+        acc[month].total += amount;
+        
+        if (payment.status === 'completed') {
+          acc[month].paid += amount;
+        } else {
+          acc[month].unpaid += amount;
+        }
+        
         return acc;
       }, {});
 
@@ -92,8 +104,17 @@ export function RentTrends({ isLoading }: RentTrendsProps) {
               />
               <Line
                 type="monotone"
-                dataKey="total"
+                dataKey="paid"
+                name="Paid"
                 stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="unpaid"
+                name="Unpaid"
+                stroke="hsl(var(--destructive))"
                 strokeWidth={2}
                 dot={false}
               />
