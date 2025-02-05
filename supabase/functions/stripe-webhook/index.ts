@@ -54,7 +54,6 @@ serve(async (req) => {
 
         console.log('Payment succeeded:', paymentId);
 
-        // Update payment status and record payment date
         const { error: updateError } = await supabaseClient
           .from('payments')
           .update({

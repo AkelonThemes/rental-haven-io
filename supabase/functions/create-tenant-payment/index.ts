@@ -4,25 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-deno-subhost',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature, x-deno-subhost',
   'x-deno-subhost': 'hlljirnsimcmmuuhaurs',
 };
-
-// Initialize Supabase client
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-
-if (!supabaseUrl || !supabaseKey || !stripeSecretKey) {
-  throw new Error('Missing required configuration');
-}
-
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-// Initialize Stripe
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2023-10-16',
-});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -42,6 +26,11 @@ serve(async (req) => {
     if (!body?.payment_id) {
       throw new Error('Payment ID is required');
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
 
     // Get payment details with related data
     const { data: payment, error: paymentError } = await supabaseClient
@@ -96,6 +85,10 @@ serve(async (req) => {
     console.log('Creating Stripe Checkout session...');
     console.log('Amount:', payment.amount, 'Platform fee:', platformFeeAmount);
 
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+      apiVersion: '2023-10-16',
+    });
+
     // Create Checkout Session with proper URL handling
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -113,8 +106,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: new URL('/tenant-dashboard?success=true', req.url).toString(),
-      cancel_url: new URL('/tenant-dashboard?canceled=true', req.url).toString(),
+      success_url: `${new URL(req.url).origin}/tenant-dashboard?success=true`,
+      cancel_url: `${new URL(req.url).origin}/tenant-dashboard?canceled=true`,
       metadata: {
         payment_id: payment.id,
         property_id: payment.property_id,
