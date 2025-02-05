@@ -59,6 +59,16 @@ export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
       if (functionError) throw functionError;
       if (!functionData) throw new Error('No response from function');
 
+      // Check if there was an error response from the function
+      if (functionData.error) {
+        toast({
+          title: "Cannot add tenant",
+          description: functionData.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Only send welcome email if a password was returned (new user)
       if (functionData.password) {
         const { error: emailError } = await supabase.functions.invoke('send-tenant-welcome', {
@@ -116,7 +126,7 @@ export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
           <DialogTitle>Add New Tenant</DialogTitle>
           <DialogDescription>
             Add a new tenant to your property. If the email is already registered, 
-            the existing user will be assigned as a tenant.
+            the existing user will be assigned as a tenant if they are not already a landlord.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

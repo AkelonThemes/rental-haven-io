@@ -47,15 +47,41 @@ Deno.serve(async (req) => {
       throw searchError
     }
 
-    let userId
-    let password = ''
-
+    // If user exists, check their role
     if (existingUser.users.length > 0) {
-      console.log('User already exists, using existing user')
+      const userId = existingUser.users[0].id
+      
+      // Check user's role in profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single()
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError)
+        throw profileError
+      }
+
+      if (profileData.role === 'landlord') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Cannot add a landlord as a tenant. The user must create a separate account with a different email for tenant access.'
+          }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+
+      // Existing tenant user, proceed with tenant creation
+      console.log('Using existing tenant user')
       userId = existingUser.users[0].id
     } else {
-      console.log('Creating new user')
-      password = generatePassword()
+      // Create new user as tenant
+      console.log('Creating new tenant user')
+      const password = generatePassword()
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: tenantData.email,
         password: password,
@@ -77,8 +103,6 @@ Deno.serve(async (req) => {
 
       userId = newUser.user.id
     }
-
-    console.log('User ID:', userId)
 
     // Wait a moment for the trigger to complete
     await new Promise(resolve => setTimeout(resolve, 1000))
