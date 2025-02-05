@@ -11,10 +11,7 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
-      }
+      headers: corsHeaders
     });
   }
 
@@ -116,7 +113,6 @@ serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
         },
         status: 200,
       }
@@ -129,7 +125,6 @@ serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
         },
         status: 500,
       }

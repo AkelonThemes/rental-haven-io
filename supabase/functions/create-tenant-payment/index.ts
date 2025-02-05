@@ -11,10 +11,7 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
-      }
+      headers: corsHeaders
     });
   }
 
@@ -81,6 +78,7 @@ serve(async (req) => {
 
     console.log('Creating Stripe Checkout session...');
 
+    const origin = new URL(req.url).origin;
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -97,8 +95,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${new URL(req.url).origin}/tenant-dashboard?success=true`,
-      cancel_url: `${new URL(req.url).origin}/tenant-dashboard?canceled=true`,
+      success_url: `${origin}/tenant-dashboard?success=true`,
+      cancel_url: `${origin}/tenant-dashboard?canceled=true`,
       metadata: {
         payment_id: payment.id,
       },
@@ -113,7 +111,6 @@ serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
         },
         status: 200,
       }
@@ -126,7 +123,6 @@ serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
         },
         status: 500,
       }
