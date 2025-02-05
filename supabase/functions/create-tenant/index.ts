@@ -78,8 +78,21 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Existing tenant user, proceed with tenant creation
-      console.log('Using existing tenant user')
+      // Update existing user's profile to ensure tenant role
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          role: 'tenant',
+          full_name: tenantData.full_name
+        })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('Error updating profile:', updateError)
+        throw updateError
+      }
+
+      console.log('Updated existing user profile')
     } else {
       // Create new user as tenant
       console.log('Creating new tenant user')
@@ -104,10 +117,24 @@ Deno.serve(async (req) => {
       }
 
       userId = newUser.user.id
-    }
 
-    // Wait a moment for the trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 1000))
+      // Wait for the trigger to complete profile creation
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Ensure profile is updated with tenant role
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          role: 'tenant',
+          full_name: tenantData.full_name
+        })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('Error updating profile:', updateError)
+        throw updateError
+      }
+    }
 
     console.log('Creating tenant record')
 
