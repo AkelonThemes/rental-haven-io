@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Pencil, Trash2, CreditCard } from "lucide-react";
+import { Users, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
 import { TenantSummarySheet } from "@/components/TenantSummarySheet";
@@ -97,7 +97,10 @@ const Tenants = () => {
         .delete()
         .eq("tenant_id", tenantId);
 
-      if (paymentsError) throw paymentsError;
+      if (paymentsError) {
+        console.error("Error deleting payments:", paymentsError);
+        throw paymentsError;
+      }
 
       // Then, delete the tenant record
       const { error: tenantError } = await supabase
@@ -105,12 +108,15 @@ const Tenants = () => {
         .delete()
         .eq("id", tenantId);
 
-      if (tenantError) throw tenantError;
+      if (tenantError) {
+        console.error("Error deleting tenant:", tenantError);
+        throw tenantError;
+      }
 
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
       toast({
         title: "Success",
-        description: "Tenant deleted successfully",
+        description: "Tenant and associated records deleted successfully",
       });
     } catch (error: any) {
       toast({
