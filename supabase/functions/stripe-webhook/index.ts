@@ -53,11 +53,11 @@ serve(async (req) => {
     console.log('Processing webhook event:', event.type);
 
     switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object;
-        const paymentId = paymentIntent.metadata?.payment_id;
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const paymentId = session.metadata?.payment_id;
 
-        console.log('Payment succeeded. Payment ID:', paymentId);
+        console.log('Checkout session completed. Payment ID:', paymentId);
 
         if (!paymentId) {
           throw new Error('No payment_id found in metadata');
@@ -69,7 +69,7 @@ serve(async (req) => {
             status: 'completed',
             payment_date: new Date().toISOString(),
             landlord_payout_status: 'pending',
-            stripe_payment_id: paymentIntent.id
+            stripe_payment_id: session.payment_intent
           })
           .eq('id', paymentId);
 
@@ -82,11 +82,11 @@ serve(async (req) => {
         break;
       }
 
-      case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object;
-        const paymentId = paymentIntent.metadata?.payment_id;
+      case 'checkout.session.expired': {
+        const session = event.data.object;
+        const paymentId = session.metadata?.payment_id;
 
-        console.log('Payment failed. Payment ID:', paymentId);
+        console.log('Checkout session expired. Payment ID:', paymentId);
 
         if (!paymentId) {
           throw new Error('No payment_id found in metadata');
@@ -96,7 +96,7 @@ serve(async (req) => {
           .from('payments')
           .update({
             status: 'failed',
-            stripe_payment_id: paymentIntent.id
+            stripe_payment_id: session.payment_intent
           })
           .eq('id', paymentId);
 
