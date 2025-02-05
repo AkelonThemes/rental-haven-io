@@ -109,8 +109,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${req.headers.get('origin')}/dashboard?success=true`,
-      cancel_url: `${req.headers.get('origin')}/dashboard?canceled=true`,
+      success_url: new URL('/dashboard?success=true', req.url).toString(),
+      cancel_url: new URL('/dashboard?canceled=true', req.url).toString(),
       metadata: {
         payment_id: payment.id,
         property_id: payment.property_id,

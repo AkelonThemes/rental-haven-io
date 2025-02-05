@@ -1,8 +1,5 @@
-// @ts-ignore: Deno imports
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore: Deno imports
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&no-check";
-// @ts-ignore: Deno imports
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target=deno&no-check";
 
 const corsHeaders = {
@@ -70,7 +67,7 @@ serve(async (req) => {
         // Create a billing portal session instead
         const session = await stripe.billingPortal.sessions.create({
           customer: customer_id,
-          return_url: 'https://rental-haven-io.lovable.app/account',
+          return_url: new URL('/account', req.url).toString(),
         });
 
         return new Response(
@@ -95,8 +92,8 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: 'https://rental-haven-io.lovable.app/account?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'https://rental-haven-io.lovable.app/account',
+      success_url: new URL('/account?session_id={CHECKOUT_SESSION_ID}', req.url).toString(),
+      cancel_url: new URL('/account', req.url).toString(),
       subscription_data: {
         metadata: {
           user_id: user.id,
