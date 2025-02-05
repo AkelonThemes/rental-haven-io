@@ -91,7 +91,18 @@ const Tenants = () => {
 
   const handleDelete = async (tenantId: string) => {
     try {
-      // First, delete all related payments
+      // First, delete all related maintenance requests
+      const { error: maintenanceError } = await supabase
+        .from("maintenance_requests")
+        .delete()
+        .eq("tenant_id", tenantId);
+
+      if (maintenanceError) {
+        console.error("Error deleting maintenance requests:", maintenanceError);
+        throw maintenanceError;
+      }
+
+      // Then, delete all related payments
       const { error: paymentsError } = await supabase
         .from("payments")
         .delete()
@@ -102,7 +113,7 @@ const Tenants = () => {
         throw paymentsError;
       }
 
-      // Then, delete the tenant record
+      // Finally, delete the tenant record
       const { error: tenantError } = await supabase
         .from("tenants")
         .delete()
@@ -211,7 +222,7 @@ const Tenants = () => {
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                               This action cannot be undone. This will permanently delete the tenant
-                              and all associated payment records.
+                              and all associated maintenance requests and payment records.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
