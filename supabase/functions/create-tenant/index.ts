@@ -36,24 +36,20 @@ Deno.serve(async (req) => {
     console.log('Starting tenant creation process for:', tenantData.email)
     
     // First check if user already exists
-    const { data: existingUsers, error: searchError } = await supabase.auth.admin.listUsers({
-      filter: {
-        email: tenantData.email
-      }
-    })
-
+    const { data: existingUsers, error: searchError } = await supabase.auth.admin.listUsers()
     if (searchError) {
       console.error('Error searching for existing user:', searchError)
       throw searchError
     }
 
+    const existingUser = existingUsers.users.find(user => user.email === tenantData.email)
     let userId: string
     let password: string | undefined
 
     // If user exists, check their role
-    if (existingUsers.users.length > 0) {
-      console.log('Found existing user')
-      userId = existingUsers.users[0].id
+    if (existingUser) {
+      console.log('Found existing user:', existingUser.id)
+      userId = existingUser.id
       
       // Check user's role in profiles table
       const { data: profileData, error: profileError } = await supabase
@@ -122,10 +118,7 @@ Deno.serve(async (req) => {
       userId = newUser.user.id
       console.log('Created new user with ID:', userId)
 
-      // Wait for the trigger to complete profile creation
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Ensure profile is created with tenant role
+      // Create profile for new user
       const { error: insertProfileError } = await supabase
         .from('profiles')
         .insert({
@@ -134,16 +127,14 @@ Deno.serve(async (req) => {
           full_name: tenantData.full_name,
           email: tenantData.email
         })
-        .select()
-        .single()
 
       if (insertProfileError) {
         console.error('Error creating profile:', insertProfileError)
         throw insertProfileError
       }
-    }
 
-    console.log('Creating tenant record')
+      console.log('Created new profile for user')
+    }
 
     // Create tenant record
     const { error: tenantError } = await supabase
@@ -168,7 +159,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true,
         userId,
-        password // Only included if a new user was created
+        password
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -178,7 +169,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
