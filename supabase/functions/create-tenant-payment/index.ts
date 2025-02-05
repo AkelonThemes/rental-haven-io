@@ -12,7 +12,10 @@ serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
-      headers: corsHeaders
+      headers: {
+        ...corsHeaders,
+        'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
+      }
     });
   }
 
@@ -136,7 +139,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ url: session.url }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
+        },
         status: 200,
       }
     );
@@ -148,7 +155,11 @@ serve(async (req) => {
         details: error.toString()
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
+        },
         status: 500,
       }
     );
