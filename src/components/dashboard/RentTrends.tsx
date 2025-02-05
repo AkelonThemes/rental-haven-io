@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +13,6 @@ interface RentTrendsProps {
 export function RentTrends({ isLoading }: RentTrendsProps) {
   const isMobile = useIsMobile();
   
-  // Fetch all rental payments data for the current year
   const { data: paymentsData, isLoading: isPaymentsLoading } = useQuery({
     queryKey: ['rental-performance'],
     queryFn: async () => {
@@ -82,7 +81,7 @@ export function RentTrends({ isLoading }: RentTrendsProps) {
       <CardContent>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={paymentsData}>
+            <BarChart data={paymentsData}>
               <XAxis 
                 dataKey="month" 
                 stroke="#888888"
@@ -102,23 +101,24 @@ export function RentTrends({ isLoading }: RentTrendsProps) {
                 formatter={(value: number) => [`K${value.toFixed(2)}`, "Amount"]}
                 labelFormatter={(label) => `Month: ${label}`}
               />
-              <Line
-                type="monotone"
+              <Legend 
+                verticalAlign="top" 
+                height={36}
+                formatter={(value) => value.charAt(0).toUpperCase() + value.slice(1)}
+              />
+              <Bar
                 dataKey="paid"
-                name="Paid"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                dot={false}
+                name="Paid Rent"
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
               />
-              <Line
-                type="monotone"
+              <Bar
                 dataKey="unpaid"
-                name="Unpaid"
-                stroke="hsl(var(--destructive))"
-                strokeWidth={2}
-                dot={false}
+                name="Unpaid Rent"
+                fill="hsl(var(--destructive))"
+                radius={[4, 4, 0, 0]}
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
