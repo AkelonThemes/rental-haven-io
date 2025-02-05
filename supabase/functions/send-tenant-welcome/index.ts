@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
             </div>
             <p><strong>Important:</strong> For security reasons, tenants will be asked to change their password after first login.</p>
           ` : ''}
-          <p>Tenant portal access: <a href="https://rental-haven-io.lovable.app/auth">Rental Haven Login</a></p>
+          <p>Tenant portal access: <a href="https://rental-haven-io.lovable.app/login">Rental Haven Login</a></p>
           <p>If you have any questions or need assistance, please contact your property manager.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
           <p style="color: #666; font-size: 12px;">Note: This is a test email. In production, this would be sent to: ${tenantEmail}</p>
