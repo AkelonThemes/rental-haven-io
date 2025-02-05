@@ -86,23 +86,33 @@ export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
         if (emailError) {
           console.error('Error sending welcome email:', emailError);
           toast({
-            title: "Tenant created but email failed",
-            description: "The tenant was created successfully but we couldn't send the welcome email.",
+            title: "Tenant added but email failed",
+            description: "The tenant was created successfully but we couldn't send the welcome email. Please try resending it later.",
             variant: "destructive",
           });
+          return;
         }
+
+        // Success with email sent
+        toast({
+          title: "Success",
+          description: "Tenant added successfully and welcome email sent!",
+          variant: "default",
+        });
+      } else {
+        // Success without email (existing user)
+        toast({
+          title: "Success",
+          description: "Existing tenant added successfully to the property",
+          variant: "default",
+        });
       }
 
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      
       setOpen(false);
-      toast({
-        title: "Success",
-        description: functionData.password 
-          ? "Tenant added successfully and welcome email sent"
-          : "Tenant added successfully",
-      });
+      form.reset();
+      
     } catch (error: any) {
       console.error('Error in tenant creation:', error);
       toast({
