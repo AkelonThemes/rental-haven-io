@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-deno-subhost',
+  'x-deno-subhost': 'hlljirnsimcmmuuhaurs',
 };
 
 // Initialize Supabase client
@@ -99,31 +100,33 @@ serve(async (req) => {
     console.log('Amount:', payment.amount, 'Platform fee:', platformFeeAmount);
 
     // Create Checkout Session with updated success_url
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `Rent Payment - ${payment.property?.address || 'Property'}`,
-            description: payment.tenant?.profile?.full_name 
-              ? `Payment for ${payment.tenant.profile.full_name}`
-              : undefined,
+
+      // Create Checkout Session with proper URL handling
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Rent Payment - ${payment.property?.address || 'Property'}`,
+              description: payment.tenant?.profile?.full_name 
+                ? `Payment for ${payment.tenant.profile.full_name}`
+                : undefined,
+            },
+            unit_amount: amountInCents,
           },
-          unit_amount: amountInCents,
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: new URL('/tenant-dashboard?success=true', req.url).toString(),
+        cancel_url: new URL('/tenant-dashboard?canceled=true', req.url).toString(),
+        metadata: {
+          payment_id: payment.id,
+          property_id: payment.property_id,
+          tenant_id: payment.tenant_id,
         },
-        quantity: 1,
-      }],
-      mode: 'payment',
-      success_url: new URL('/dashboard?success=true', req.url).toString(),
-      cancel_url: new URL('/dashboard?canceled=true', req.url).toString(),
-      metadata: {
-        payment_id: payment.id,
-        property_id: payment.property_id,
-        tenant_id: payment.tenant_id,
-      },
-      customer_email: user.email,
-    });
+        customer_email: user.email,
+      });
 
     console.log('Checkout session created:', session.url);
 

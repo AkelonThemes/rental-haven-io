@@ -17,6 +17,8 @@ export function useRole() {
     async function fetchRole() {
       try {
         console.log('Fetching user role...');
+        
+        // Get current session and check if it needs refresh
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -27,6 +29,24 @@ export function useRole() {
           }
           navigate('/login');
           return;
+        }
+
+        // Check if token is about to expire (within 60 seconds)
+        const expiresAt = session?.expires_at || 0;
+        const isExpiringSoon = (expiresAt * 1000) - Date.now() < 60000;
+
+        if (isExpiringSoon) {
+          console.log('Session expiring soon, refreshing...');
+          const { data: { session: refreshedSession }, error: refreshError } = 
+            await supabase.auth.refreshSession();
+          
+          if (refreshError) {
+            throw refreshError;
+          }
+          
+          if (!refreshedSession) {
+            throw new Error('Failed to refresh session');
+          }
         }
 
         console.log('Session found, user ID:', session.user.id);
@@ -66,19 +86,27 @@ export function useRole() {
           setRole(null);
           setLoading(false);
           toast({
-            title: "Error",
-            description: "Failed to fetch user role. Please try refreshing the page.",
+            title: "Session Error",
+            description: "Please sign in again to continue.",
             variant: "destructive",
           });
+          navigate('/login');
         }
       }
     }
 
     fetchRole();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
       if (isSubscribed) {
-        fetchRole();
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          setRole(null);
+          navigate('/login');
+        } else if (session) {
+          fetchRole();
+        }
       }
     });
 
