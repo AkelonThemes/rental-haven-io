@@ -1,30 +1,41 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&no-check";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target=deno&no-check";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-deno-subhost',
 };
 
+// Initialize Supabase client
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+
+if (!supabaseUrl || !supabaseKey || !stripeSecretKey) {
+  throw new Error('Missing required configuration');
+}
+
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Initialize Stripe
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: '2023-10-16',
+});
+
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'x-deno-subhost': 'hlljirnsimcmmuuhaurs',
+      }
+    });
   }
 
   try {
     console.log('Starting payment process...');
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-
-    if (!supabaseUrl || !supabaseKey || !stripeSecretKey) {
-      throw new Error('Missing required configuration');
-    }
-
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     // Validate request body
     const body = await req.json();
@@ -78,11 +89,6 @@ serve(async (req) => {
     }
 
     console.log('User found:', user.email);
-
-    // Initialize Stripe
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
 
     // Calculate platform fee
     const platformFeePercentage = payment.platform_fee_percentage || 2.0;
@@ -139,7 +145,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ url: session.url }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-deno-subhost': 'hlljirnsimcmmuuhaurs' },
         status: 200,
       }
     );
@@ -151,7 +157,7 @@ serve(async (req) => {
         details: error.toString()
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-deno-subhost': 'hlljirnsimcmmuuhaurs' },
         status: 500,
       }
     );

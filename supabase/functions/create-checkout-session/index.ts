@@ -4,132 +4,150 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-deno-subhost',
 };
 
+// Initialize Supabase client
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+
+if (!supabaseUrl || !supabaseKey || !stripeSecretKey) {
+  throw new Error('Missing required configuration');
+}
+
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: '2023-10-16',
+});
+
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-  if (!stripeKey) {
-    console.error('STRIPE_SECRET_KEY is not set in environment variables');
-    return new Response(
-      JSON.stringify({ error: 'Stripe key not configured' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'x-deno-subhost': 'hlljirnsimcmmuuhaurs',
       }
-    );
+    });
   }
-
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-  );
 
   try {
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    const email = user?.email;
-
-    if (!email) {
-      throw new Error('No email found');
+    // Validate request body
+    const body = await req.json();
+    if (!body?.payment_id) {
+      throw new Error('Payment ID is required');
     }
 
-    console.log('Initializing Stripe with key length:', stripeKey.length);
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
+    // Get payment details with related data
+    const { data: payment, error: paymentError } = await supabaseClient
+      .from('payments')
+      .select(`
+        *,
+        tenant:tenants(
+          profile:profiles(full_name)
+        ),
+        property:properties(
+          address,
+          owner:profiles(
+            full_name
+          )
+        )
+      `)
+      .eq('id', body.payment_id)
+      .single();
+
+    if (paymentError) {
+      console.error('Error fetching payment:', paymentError);
+      throw new Error('Failed to fetch payment details');
+    }
+
+    if (!payment) {
+      throw new Error('Payment not found');
+    }
+
+    // Validate payment amount
+    if (!payment.amount || payment.amount <= 0) {
+      throw new Error('Invalid payment amount');
+    }
+
+    // Get user information for the tenant
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
+      req.headers.get('Authorization')?.replace('Bearer ', '') || ''
+    );
+
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    // Calculate platform fee
+    const platformFeePercentage = payment.platform_fee_percentage || 2.0;
+    const platformFeeAmount = Math.round((payment.amount * platformFeePercentage) / 100);
+    const amountInCents = Math.round(payment.amount * 100);
+
+    // Create Checkout Session with updated success_url
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Rent Payment - ${payment.property?.address || 'Property'}`,
+            description: payment.tenant?.profile?.full_name 
+              ? `Payment for ${payment.tenant.profile.full_name}`
+              : undefined,
+          },
+          unit_amount: amountInCents,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: new URL('/dashboard?success=true', req.url).toString(),
+      cancel_url: new URL('/dashboard?canceled=true', req.url).toString(),
+      metadata: {
+        payment_id: payment.id,
+        property_id: payment.property_id,
+        tenant_id: payment.tenant_id,
+      },
+      customer_email: user.email,
     });
 
-    const customers = await stripe.customers.list({
-      email: email,
-      limit: 1
-    });
+    // Update payment record with Stripe payment intent ID
+    if (session.payment_intent) {
+      const { error: updateError } = await supabaseClient
+        .from('payments')
+        .update({
+          stripe_payment_id: session.payment_intent.toString(),
+          platform_fee_amount: platformFeeAmount,
+        })
+        .eq('id', body.payment_id);
 
-    const price_id = "price_1QkPnyBZnQTVE0K5jo0Lr9cd";  // Your test price ID
-
-    let customer_id = undefined;
-    if (customers.data.length > 0) {
-      customer_id = customers.data[0].id;
-      // Check if already subscribed
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customers.data[0].id,
-        status: 'active',
-        price: price_id,
-        limit: 1
-      });
-
-      if (subscriptions.data.length > 0) {
-        // Create a billing portal session instead
-        const session = await stripe.billingPortal.sessions.create({
-          customer: customer_id,
-          return_url: new URL('/account', req.url).toString(),
-        });
-
-        return new Response(
-          JSON.stringify({ url: session.url }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
-        );
+      if (updateError) {
+        console.error('Error updating payment record:', updateError);
       }
     }
 
-    console.log('Creating checkout session...');
-    const session = await stripe.checkout.sessions.create({
-      customer: customer_id,
-      customer_email: customer_id ? undefined : email,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: price_id,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: new URL('/account?session_id={CHECKOUT_SESSION_ID}', req.url).toString(),
-      cancel_url: new URL('/account', req.url).toString(),
-      subscription_data: {
-        metadata: {
-          user_id: user.id,
-        },
-      },
-    });
-
-    // Create a pending subscription record
-    const { error: subscriptionError } = await supabaseClient
-      .from('subscriptions')
-      .insert({
-        profile_id: user.id,
-        plan_type: 'pro',
-        status: 'pending',
-        stripe_customer_id: customer_id,
-      });
-
-    if (subscriptionError) {
-      console.error('Error creating subscription record:', subscriptionError);
-    }
-
-    console.log('Checkout session created:', session.id);
     return new Response(
       JSON.stringify({ url: session.url }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'x-deno-subhost': 'hlljirnsimcmmuuhaurs',
+        }
       }
     );
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    console.error('Error in create-checkout-session:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'An unexpected error occurred' }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'x-deno-subhost': 'hlljirnsimcmmuuhaurs',
+        },
+        status: 400,
       }
     );
   }
