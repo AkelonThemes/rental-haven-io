@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Pencil, Trash2, Eye, CreditCard } from "lucide-react";
+import { Users, Pencil, Trash2, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddTenantDialog } from "@/components/AddTenantDialog";
 import { TenantSummarySheet } from "@/components/TenantSummarySheet";
@@ -91,12 +91,21 @@ const Tenants = () => {
 
   const handleDelete = async (tenantId: string) => {
     try {
-      const { error } = await supabase
+      // First, delete all related payments
+      const { error: paymentsError } = await supabase
+        .from("payments")
+        .delete()
+        .eq("tenant_id", tenantId);
+
+      if (paymentsError) throw paymentsError;
+
+      // Then, delete the tenant record
+      const { error: tenantError } = await supabase
         .from("tenants")
         .delete()
         .eq("id", tenantId);
 
-      if (error) throw error;
+      if (tenantError) throw tenantError;
 
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
       toast({
@@ -196,7 +205,7 @@ const Tenants = () => {
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                               This action cannot be undone. This will permanently delete the tenant
-                              and remove their data from the system.
+                              and all associated payment records.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
