@@ -10,8 +10,21 @@ export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      const { data: properties } = await supabase.from('properties').select('*');
-      const { data: tenants } = await supabase.from('tenants').select('*');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
+      const { data: properties } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('owner_id', session.user.id);
+
+      const { data: tenants } = await supabase
+        .from('tenants')
+        .select(`
+          *,
+          property:properties(owner_id)
+        `)
+        .eq('property.owner_id', session.user.id);
       
       return {
         propertyCount: properties?.length || 0,

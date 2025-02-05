@@ -60,7 +60,7 @@ export function DashboardCards({ stats, isLoading }: DashboardCardsProps) {
             <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-yellow-600" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Monthly Rent</p>
+            <p className="text-sm text-gray-500">Total Monthly Rent</p>
             <p className="text-lg md:text-2xl font-semibold">K{stats?.totalRent.toLocaleString() || 0}</p>
           </div>
         </div>
