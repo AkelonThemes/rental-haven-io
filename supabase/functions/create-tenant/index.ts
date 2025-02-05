@@ -47,9 +47,12 @@ Deno.serve(async (req) => {
       throw searchError
     }
 
+    let userId: string
+    let password: string | undefined
+
     // If user exists, check their role
     if (existingUser.users.length > 0) {
-      const userId = existingUser.users[0].id
+      userId = existingUser.users[0].id
       
       // Check user's role in profiles table
       const { data: profileData, error: profileError } = await supabase
@@ -77,11 +80,10 @@ Deno.serve(async (req) => {
 
       // Existing tenant user, proceed with tenant creation
       console.log('Using existing tenant user')
-      userId = existingUser.users[0].id
     } else {
       // Create new user as tenant
       console.log('Creating new tenant user')
-      const password = generatePassword()
+      password = generatePassword()
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: tenantData.email,
         password: password,
@@ -130,7 +132,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true,
         userId: userId,
-        password: password // Only included if a new user was created
+        password // Only included if a new user was created
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
