@@ -10,6 +10,8 @@ export function useRole() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let isSubscribed = true;
+
     async function fetchRole() {
       try {
         console.log('Fetching user role...');
@@ -17,8 +19,10 @@ export function useRole() {
         
         if (!session) {
           console.log('No session found');
-          setRole(null);
-          setLoading(false);
+          if (isSubscribed) {
+            setRole(null);
+            setLoading(false);
+          }
           navigate('/login');
           return;
         }
@@ -29,51 +33,59 @@ export function useRole() {
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching profile:', error);
-          toast({
-            title: "Error fetching user role",
-            description: error.message,
-            variant: "destructive",
-          });
-          setRole(null);
+          if (isSubscribed) {
+            toast({
+              title: "Error fetching user role",
+              description: "Please try refreshing the page",
+              variant: "destructive",
+            });
+            setRole(null);
+            setLoading(false);
+          }
         } else {
           console.log('Profile found, role:', profile?.role);
-          setRole(profile?.role as 'landlord' | 'tenant');
-          
-          // Redirect based on role
-          if (profile?.role === 'tenant') {
-            if (!window.location.pathname.startsWith('/tenant-')) {
+          if (isSubscribed) {
+            setRole(profile?.role as 'landlord' | 'tenant');
+            
+            // Redirect based on role only if we're not already on the correct path
+            if (profile?.role === 'tenant' && !window.location.pathname.startsWith('/tenant-')) {
               navigate('/tenant-dashboard');
-            }
-          } else if (profile?.role === 'landlord') {
-            if (window.location.pathname.startsWith('/tenant-')) {
+            } else if (profile?.role === 'landlord' && window.location.pathname.startsWith('/tenant-')) {
               navigate('/dashboard');
             }
           }
         }
       } catch (error: any) {
         console.error('Error in fetchRole:', error);
-        setRole(null);
-        toast({
-          title: "Error",
-          description: "Failed to fetch user role",
-          variant: "destructive",
-        });
+        if (isSubscribed) {
+          setRole(null);
+          toast({
+            title: "Error",
+            description: "Failed to fetch user role",
+            variant: "destructive",
+          });
+        }
       } finally {
-        setLoading(false);
+        if (isSubscribed) {
+          setLoading(false);
+        }
       }
     }
 
     fetchRole();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchRole();
+      if (isSubscribed) {
+        fetchRole();
+      }
     });
 
     return () => {
+      isSubscribed = false;
       subscription.unsubscribe();
     };
   }, [toast, navigate]);
