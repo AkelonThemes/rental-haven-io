@@ -28,10 +28,7 @@ serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        'x-deno-subhost': 'hlljirnsimcmmuuhaurs',
-      }
+      headers: corsHeaders
     });
   }
 
@@ -99,34 +96,32 @@ serve(async (req) => {
     console.log('Creating Stripe Checkout session...');
     console.log('Amount:', payment.amount, 'Platform fee:', platformFeeAmount);
 
-    // Create Checkout Session with updated success_url
-
-      // Create Checkout Session with proper URL handling
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [{
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Rent Payment - ${payment.property?.address || 'Property'}`,
-              description: payment.tenant?.profile?.full_name 
-                ? `Payment for ${payment.tenant.profile.full_name}`
-                : undefined,
-            },
-            unit_amount: amountInCents,
+    // Create Checkout Session with proper URL handling
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Rent Payment - ${payment.property?.address || 'Property'}`,
+            description: payment.tenant?.profile?.full_name 
+              ? `Payment for ${payment.tenant.profile.full_name}`
+              : undefined,
           },
-          quantity: 1,
-        }],
-        mode: 'payment',
-        success_url: new URL('/tenant-dashboard?success=true', req.url).toString(),
-        cancel_url: new URL('/tenant-dashboard?canceled=true', req.url).toString(),
-        metadata: {
-          payment_id: payment.id,
-          property_id: payment.property_id,
-          tenant_id: payment.tenant_id,
+          unit_amount: amountInCents,
         },
-        customer_email: user.email,
-      });
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: new URL('/tenant-dashboard?success=true', req.url).toString(),
+      cancel_url: new URL('/tenant-dashboard?canceled=true', req.url).toString(),
+      metadata: {
+        payment_id: payment.id,
+        property_id: payment.property_id,
+        tenant_id: payment.tenant_id,
+      },
+      customer_email: user.email,
+    });
 
     console.log('Checkout session created:', session.url);
 
@@ -148,7 +143,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ url: session.url }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-deno-subhost': 'hlljirnsimcmmuuhaurs' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     );
@@ -160,7 +155,7 @@ serve(async (req) => {
         details: error.toString()
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-deno-subhost': 'hlljirnsimcmmuuhaurs' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }
     );
