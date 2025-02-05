@@ -21,18 +21,6 @@ export default function Dashboard() {
     }
   });
 
-  // Fetch rent trends data
-  const { data: rentTrends, isLoading: trendsLoading } = useQuery({
-    queryKey: ['rent-trends'],
-    queryFn: async () => {
-      const { data: tenants } = await supabase
-        .from('tenants')
-        .select('*')
-        .order('lease_start_date', { ascending: true });
-      return tenants;
-    }
-  });
-
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
@@ -41,7 +29,7 @@ export default function Dashboard() {
       </div>
       <div className="space-y-8">
         <DashboardCards stats={stats} isLoading={statsLoading} />
-        <RentTrends data={rentTrends} isLoading={trendsLoading} />
+        <RentTrends />
       </div>
     </DashboardLayout>
   );
