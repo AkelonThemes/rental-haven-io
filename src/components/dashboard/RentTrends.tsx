@@ -2,20 +2,58 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { startOfYear, endOfYear, format } from "date-fns";
 
 interface RentTrendsProps {
-  data?: any[];
-  isLoading: boolean;
+  isLoading?: boolean;
 }
 
-export function RentTrends({ data, isLoading }: RentTrendsProps) {
+export function RentTrends({ isLoading }: RentTrendsProps) {
   const isMobile = useIsMobile();
+  
+  // Fetch rental payments data for the current financial year
+  const { data: paymentsData, isLoading: isPaymentsLoading } = useQuery({
+    queryKey: ['rental-performance'],
+    queryFn: async () => {
+      const currentDate = new Date();
+      const yearStart = startOfYear(currentDate);
+      const yearEnd = endOfYear(currentDate);
 
-  if (isLoading) {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('amount, payment_date')
+        .eq('payment_type', 'rent')
+        .eq('status', 'completed')
+        .gte('payment_date', yearStart.toISOString())
+        .lte('payment_date', yearEnd.toISOString())
+        .order('payment_date');
+
+      if (error) {
+        console.error('Error fetching payments:', error);
+        throw error;
+      }
+
+      // Process data to group by month
+      const monthlyData = data.reduce((acc: any, payment) => {
+        const month = format(new Date(payment.payment_date), 'MMM');
+        if (!acc[month]) {
+          acc[month] = { month, total: 0 };
+        }
+        acc[month].total += Number(payment.amount);
+        return acc;
+      }, {});
+
+      return Object.values(monthlyData);
+    },
+  });
+
+  if (isLoading || isPaymentsLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Rent Trends</CardTitle>
+          <CardTitle>Rental Performance</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-[300px] w-full" />
@@ -24,27 +62,15 @@ export function RentTrends({ data, isLoading }: RentTrendsProps) {
     );
   }
 
-  // Process data for the chart
-  const rentData = data?.reduce((acc: any, tenant) => {
-    const month = new Date(tenant.lease_start_date).toLocaleString('default', { month: 'short' });
-    if (!acc[month]) {
-      acc[month] = { month, rent: 0 };
-    }
-    acc[month].rent += tenant.rent_amount;
-    return acc;
-  }, {});
-
-  const chartData = rentData ? Object.values(rentData) : [];
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Rent Trends</CardTitle>
+        <CardTitle>Rental Performance</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={paymentsData}>
               <XAxis 
                 dataKey="month" 
                 stroke="#888888"
@@ -61,12 +87,12 @@ export function RentTrends({ data, isLoading }: RentTrendsProps) {
               />
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <Tooltip
-                formatter={(value) => [`K${value}`, "Amount"]}
+                formatter={(value: number) => [`K${value.toFixed(2)}`, "Amount"]}
                 labelFormatter={(label) => `Month: ${label}`}
               />
               <Line
                 type="monotone"
-                dataKey="rent"
+                dataKey="total"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 dot={false}
