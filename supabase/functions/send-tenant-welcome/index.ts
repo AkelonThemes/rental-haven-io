@@ -21,28 +21,32 @@ Deno.serve(async (req) => {
 
     console.log('Sending welcome email to:', tenantEmail);
 
+    // For testing purposes, we'll send to the verified email
+    const testEmail = 'ensolute@gmail.com'; // This should be your verified Resend email
+
     const emailResponse = await resend.emails.send({
       from: 'Rental Haven <onboarding@resend.dev>',
-      to: tenantEmail,
-      subject: 'Welcome to Rental Haven - Your Login Credentials',
+      to: testEmail, // Using the test email instead of tenantEmail
+      subject: '[TEST] Welcome to Rental Haven - Your Login Credentials',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333;">Welcome to Rental Haven!</h1>
-          <p>Hello ${tenantName},</p>
-          <p>Your landlord has added you as a tenant for the property at ${propertyAddress}.</p>
+          <p>This is a test email for tenant: ${tenantName}</p>
+          <p>Property Address: ${propertyAddress}</p>
           ${password ? `
             <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-              <p><strong>Your login credentials:</strong></p>
+              <p><strong>Test Login credentials:</strong></p>
               <ul>
-                <li>Email: ${tenantEmail}</li>
-                <li>Temporary Password: ${password}</li>
+                <li>Email that would be used: ${tenantEmail}</li>
+                <li>Temporary Password that would be sent: ${password}</li>
               </ul>
             </div>
-            <p><strong>Important:</strong> For security reasons, please change your password after your first login.</p>
+            <p><strong>Important:</strong> For security reasons, tenants will be asked to change their password after first login.</p>
           ` : ''}
-          <p>You can access your tenant portal at: <a href="https://rental-haven-io.lovable.app/auth">Rental Haven Login</a></p>
+          <p>Tenant portal access: <a href="https://rental-haven-io.lovable.app/auth">Rental Haven Login</a></p>
           <p>If you have any questions or need assistance, please contact your property manager.</p>
           <p>Best regards,<br>The Rental Haven Team</p>
+          <p style="color: #666; font-size: 12px;">Note: This is a test email. In production, this would be sent to: ${tenantEmail}</p>
         </div>
       `
     });
