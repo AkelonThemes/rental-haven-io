@@ -137,6 +137,7 @@ const Auth = () => {
         });
 
         if (error) {
+          console.error('Sign in error:', error);
           if (error.message.includes('Invalid login credentials')) {
             toast({
               title: "Login Failed",
