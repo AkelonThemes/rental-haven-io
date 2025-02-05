@@ -11,7 +11,6 @@ interface TenantData {
   created_by: string
 }
 
-// Function to generate a random 8-character password
 function generatePassword() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
   let password = ''
@@ -34,43 +33,63 @@ Deno.serve(async (req) => {
 
     const { tenantData } = await req.json() as { tenantData: TenantData }
     
-    console.log('Creating auth user for:', tenantData.email)
+    console.log('Creating or fetching auth user for:', tenantData.email)
     
-    // Generate a random password
-    const password = generatePassword()
-    
-    // Create the auth user with the generated password
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: tenantData.email,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: tenantData.full_name,
-        role: 'tenant'
+    // First check if user already exists
+    const { data: existingUser, error: searchError } = await supabase.auth.admin.listUsers({
+      filter: {
+        email: tenantData.email
       }
     })
 
-    if (authError) {
-      console.error('Error creating auth user:', authError)
-      throw authError
+    if (searchError) {
+      console.error('Error searching for existing user:', searchError)
+      throw searchError
     }
 
-    if (!authUser.user) {
-      throw new Error('No user returned from auth creation')
+    let userId
+    let password = ''
+
+    if (existingUser.users.length > 0) {
+      console.log('User already exists, using existing user')
+      userId = existingUser.users[0].id
+    } else {
+      console.log('Creating new user')
+      password = generatePassword()
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: tenantData.email,
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: tenantData.full_name,
+          role: 'tenant'
+        }
+      })
+
+      if (createError) {
+        console.error('Error creating auth user:', createError)
+        throw createError
+      }
+
+      if (!newUser.user) {
+        throw new Error('No user returned from auth creation')
+      }
+
+      userId = newUser.user.id
     }
 
-    console.log('Created auth user:', authUser.user.id)
+    console.log('User ID:', userId)
 
     // Wait a moment for the trigger to complete
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     console.log('Creating tenant record')
 
-    // Create tenant record with the new profile ID
+    // Create tenant record with the profile ID
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        profile_id: authUser.user.id,
+        profile_id: userId,
         property_id: tenantData.property_id,
         lease_start_date: tenantData.lease_start_date,
         lease_end_date: tenantData.lease_end_date,
@@ -86,8 +105,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        userId: authUser.user.id,
-        password: password // Pass the password to the welcome email function
+        userId: userId,
+        password: password // Only included if a new user was created
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -59,25 +59,28 @@ export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
       if (functionError) throw functionError;
       if (!functionData) throw new Error('No response from function');
 
-      const { error: emailError } = await supabase.functions.invoke('send-tenant-welcome', {
-        body: {
-          tenantEmail: values.email,
-          tenantName: values.full_name,
-          propertyAddress: property.address,
-          password: functionData.password
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (emailError) {
-        console.error('Error sending welcome email:', emailError);
-        toast({
-          title: "Tenant created but email failed",
-          description: "The tenant was created successfully but we couldn't send the welcome email.",
-          variant: "destructive",
+      // Only send welcome email if a password was returned (new user)
+      if (functionData.password) {
+        const { error: emailError } = await supabase.functions.invoke('send-tenant-welcome', {
+          body: {
+            tenantEmail: values.email,
+            tenantName: values.full_name,
+            propertyAddress: property.address,
+            password: functionData.password
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
         });
+
+        if (emailError) {
+          console.error('Error sending welcome email:', emailError);
+          toast({
+            title: "Tenant created but email failed",
+            description: "The tenant was created successfully but we couldn't send the welcome email.",
+            variant: "destructive",
+          });
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
@@ -86,7 +89,9 @@ export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
       setOpen(false);
       toast({
         title: "Success",
-        description: "Tenant added successfully and welcome email sent",
+        description: functionData.password 
+          ? "Tenant added successfully and welcome email sent"
+          : "Tenant added successfully",
       });
     } catch (error: any) {
       console.error('Error in tenant creation:', error);
@@ -109,6 +114,10 @@ export function AddTenantDialog({ propertyId }: AddTenantDialogProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Tenant</DialogTitle>
+          <DialogDescription>
+            Add a new tenant to your property. If the email is already registered, 
+            the existing user will be assigned as a tenant.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
