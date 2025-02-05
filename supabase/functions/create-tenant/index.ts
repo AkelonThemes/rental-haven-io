@@ -118,22 +118,36 @@ Deno.serve(async (req) => {
       userId = newUser.user.id
       console.log('Created new user with ID:', userId)
 
-      // Create profile for new user
-      const { error: insertProfileError } = await supabase
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Check if profile exists before trying to create it
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .insert({
-          id: userId,
-          role: 'tenant',
-          full_name: tenantData.full_name,
-          email: tenantData.email
-        })
+        .select('id')
+        .eq('id', userId)
+        .single()
 
-      if (insertProfileError) {
-        console.error('Error creating profile:', insertProfileError)
-        throw insertProfileError
+      if (!existingProfile) {
+        // Only create profile if it doesn't exist
+        const { error: insertProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            role: 'tenant',
+            full_name: tenantData.full_name,
+            email: tenantData.email
+          })
+
+        if (insertProfileError) {
+          console.error('Error creating profile:', insertProfileError)
+          throw insertProfileError
+        }
+
+        console.log('Created new profile for user')
+      } else {
+        console.log('Profile already exists for user')
       }
-
-      console.log('Created new profile for user')
     }
 
     // Create tenant record
