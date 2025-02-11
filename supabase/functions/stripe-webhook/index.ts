@@ -64,6 +64,10 @@ serve(async (req) => {
           const customerId = session.customer;
           const userEmail = session.customer_email;
           
+          if (!subscription.id) {
+            throw new Error('No subscription ID returned from Stripe');
+          }
+          
           // Get the profile ID using the customer's email
           const { data: profile, error: profileError } = await supabaseClient
             .from('profiles')
@@ -134,6 +138,11 @@ serve(async (req) => {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object;
+        
+        if (!subscription.id) {
+          throw new Error('No subscription ID in webhook event');
+        }
+        
         console.log('Processing subscription update:', subscription.id);
 
         const { error: updateError } = await supabaseClient
@@ -156,6 +165,11 @@ serve(async (req) => {
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
+        
+        if (!subscription.id) {
+          throw new Error('No subscription ID in webhook event');
+        }
+        
         console.log('Processing subscription deletion:', subscription.id);
 
         const { error: updateError } = await supabaseClient
