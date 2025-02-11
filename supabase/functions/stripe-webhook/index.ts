@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -55,30 +56,115 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const paymentId = session.metadata?.payment_id;
+        
+        if (session.mode === 'subscription') {
+          console.log('Processing completed subscription checkout session');
+          
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          const customerId = session.customer;
+          const userEmail = session.customer_email;
+          
+          // Get the profile ID using the customer's email
+          const { data: profile, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('id')
+            .eq('email', userEmail)
+            .single();
 
-        console.log('Checkout session completed. Payment ID:', paymentId);
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            throw profileError;
+          }
 
-        if (!paymentId) {
-          throw new Error('No payment_id found in metadata');
+          // Create or update subscription record
+          const { error: subscriptionError } = await supabaseClient
+            .from('subscriptions')
+            .upsert({
+              profile_id: profile.id,
+              stripe_subscription_id: subscription.id,
+              stripe_customer_id: customerId,
+              status: subscription.status,
+              plan_type: 'standard',
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            }, {
+              onConflict: 'stripe_subscription_id'
+            });
+
+          if (subscriptionError) {
+            console.error('Error creating subscription record:', subscriptionError);
+            throw subscriptionError;
+          }
+
+          console.log('Successfully created subscription record');
+        } else {
+          // Handle regular payment completion
+          const paymentId = session.metadata?.payment_id;
+          console.log('Checkout session completed. Payment ID:', paymentId);
+
+          if (!paymentId) {
+            throw new Error('No payment_id found in metadata');
+          }
+
+          const { error: updateError } = await supabaseClient
+            .from('payments')
+            .update({
+              status: 'completed',
+              payment_date: new Date().toISOString(),
+              landlord_payout_status: 'pending',
+              stripe_payment_id: session.payment_intent
+            })
+            .eq('id', paymentId);
+
+          if (updateError) {
+            console.error('Error updating payment:', updateError);
+            throw updateError;
+          }
+
+          console.log('Successfully updated payment status for ID:', paymentId);
         }
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object;
+        console.log('Processing subscription update:', subscription.id);
 
         const { error: updateError } = await supabaseClient
-          .from('payments')
+          .from('subscriptions')
           .update({
-            status: 'completed',
-            payment_date: new Date().toISOString(),
-            landlord_payout_status: 'pending',
-            stripe_payment_id: session.payment_intent
+            status: subscription.status,
+            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           })
-          .eq('id', paymentId);
+          .eq('stripe_subscription_id', subscription.id);
 
         if (updateError) {
-          console.error('Error updating payment:', updateError);
+          console.error('Error updating subscription:', updateError);
           throw updateError;
         }
 
-        console.log('Successfully updated payment status for ID:', paymentId);
+        console.log('Successfully updated subscription status');
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object;
+        console.log('Processing subscription deletion:', subscription.id);
+
+        const { error: updateError } = await supabaseClient
+          .from('subscriptions')
+          .update({
+            status: 'canceled'
+          })
+          .eq('stripe_subscription_id', subscription.id);
+
+        if (updateError) {
+          console.error('Error updating subscription status to canceled:', updateError);
+          throw updateError;
+        }
+
+        console.log('Successfully marked subscription as canceled');
         break;
       }
 
