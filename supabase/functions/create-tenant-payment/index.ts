@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -24,14 +25,70 @@ serve(async (req) => {
     const body = await req.json();
     console.log('Request body:', body);
 
-    if (!body?.payment_id) {
-      throw new Error('Payment ID is required');
-    }
-
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
+      req.headers.get('Authorization')?.replace('Bearer ', '') || ''
+    );
+
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    console.log('User found:', user.email);
+
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+      apiVersion: '2023-10-16',
+    });
+
+    // Handle subscription payments
+    if (body.payment_type === 'subscription') {
+      console.log('Creating subscription checkout session...');
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            recurring: {
+              interval: 'month',
+            },
+            product_data: {
+              name: 'Property Management Subscription',
+              description: 'Monthly subscription for property management services',
+            },
+            unit_amount: 2000, // $20.00 per month
+          },
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${new URL(req.url).origin}/account?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${new URL(req.url).origin}/account?canceled=true`,
+        customer_email: user.email,
+      });
+
+      console.log('Subscription checkout session created:', session.url);
+
+      return new Response(
+        JSON.stringify({ url: session.url }),
+        { 
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'x-deno-subhost': 'hlljirnsimcmmuuhaurs'
+          },
+          status: 200,
+        }
+      );
+    }
+
+    // Handle regular rent payments
+    if (!body.payment_id) {
+      throw new Error('Payment ID is required for rent payments');
+    }
 
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
@@ -65,21 +122,7 @@ serve(async (req) => {
       throw new Error('Invalid payment amount');
     }
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      req.headers.get('Authorization')?.replace('Bearer ', '') || ''
-    );
-
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    console.log('User found:', user.email);
-
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-      apiVersion: '2023-10-16',
-    });
-
-    console.log('Creating Stripe Checkout session...');
+    console.log('Creating rent payment checkout session...');
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -105,7 +148,7 @@ serve(async (req) => {
       customer_email: user.email,
     });
 
-    console.log('Checkout session created:', session.url);
+    console.log('Rent payment checkout session created:', session.url);
 
     return new Response(
       JSON.stringify({ url: session.url }),
