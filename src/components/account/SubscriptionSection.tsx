@@ -1,3 +1,4 @@
+
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,8 +55,9 @@ export const SubscriptionSection = ({ profile }: SubscriptionSectionProps) => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+      const { data, error } = await supabase.functions.invoke('create-tenant-payment', {
         method: 'POST',
+        body: { payment_type: 'subscription' },
       });
       
       if (error) {
