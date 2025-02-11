@@ -76,6 +76,12 @@ serve(async (req) => {
             throw profileError;
           }
 
+          if (!profile) {
+            throw new Error(`No profile found for email ${userEmail}`);
+          }
+
+          console.log('Found profile for subscription:', profile.id);
+
           // Create or update subscription record
           const { error: subscriptionError } = await supabaseClient
             .from('subscriptions')
